@@ -293,6 +293,11 @@ section.seccion-mapa {
   width: 100%; height: 600px;
 }
 .mapa-iframe-wrapper iframe { width: 100%; height: 100%; border: none; }
+/* Pantalla completa simulada (funciona en todos los dispositivos, incl. iPhone) */
+.mapa-iframe-wrapper.mapa-fs {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; z-index: 9999;
+}
+body.mapa-fs-activo { overflow: hidden; }
 
 /* ── Tabla alternativa ────────────────────────────────────────────────────── */
 .tabla-alternativa { max-width: 880px; margin: 1.5rem auto; padding: 0 3rem; }

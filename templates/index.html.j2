@@ -257,6 +257,16 @@
       iframe.scrollIntoView({ behavior: animar() ? 'smooth' : 'auto', block: 'center' });
     });
   });
+  // Pantalla completa simulada: la página expande el iframe a todo el viewport
+  window.addEventListener('message', e => {
+    if (!e.data || e.data.type !== 'fullscreen') return;
+    const iframe = [...document.querySelectorAll('.seccion-mapa iframe')]
+      .find(f => f.contentWindow === e.source);
+    if (!iframe) return;
+    iframe.closest('.mapa-iframe-wrapper').classList.toggle('mapa-fs', !!e.data.on);
+    document.body.classList.toggle('mapa-fs-activo', !!e.data.on);
+  });
+
   // Mapa → lista: al tocar un punto, resalta su fila (abre la lista si está cerrada)
   window.addEventListener('message', e => {
     if (!e.data || e.data.type !== 'seleccionado') return;
