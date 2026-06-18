@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Centros distritales de atención directa</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-gesture-handling@1.2.2/dist/leaflet-gesture-handling.min.css">
+  
+  <style>
+    :root{
+      --morado:#5B2B82; --morado-osc:#43205F; --salmon:#E8705B;
+      --verde:#4F7A12; --borde:#D8CEE0; --texto:#211A28;
+    }
+    *{box-sizing:border-box;}
+    html,body{margin:0;height:100%;font-family:"Segoe UI",Arial,sans-serif;color:var(--texto);}
+    #app{display:flex;height:100vh;width:100%;}
+
+    /* ── Panel de filtros ── */
+    #panel{
+      width:300px;flex-shrink:0;background:#fff;border-right:2px solid var(--borde);
+      overflow-y:auto;padding:1rem 1.1rem;
+    }
+    #panel h2{font-size:1.05rem;color:var(--morado);margin:.2rem 0 .4rem;}
+    .panel-top{display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
+    #toggle-filtros{
+      display:none;background:#fff;border:2px solid var(--morado);color:var(--morado);
+      border-radius:999px;padding:.45rem .9rem;font-size:.85rem;font-weight:700;cursor:pointer;min-height:40px;
+    }
+    .pasos{font-size:.8rem;background:#F6F2F8;border-radius:8px;padding:.6rem .7rem;margin-bottom:1rem;line-height:1.5;}
+    .pasos b{color:var(--morado);}
+    fieldset{border:none;padding:0;margin:0 0 1.1rem;}
+    legend, .campo-label{font-weight:600;font-size:.9rem;display:block;margin-bottom:.35rem;color:var(--texto);}
+    select, input[type="text"]{
+      width:100%;padding:.55rem .6rem;font-size:.92rem;border:2px solid var(--borde);
+      border-radius:8px;background:#fff;color:var(--texto);min-height:44px;
+    }
+    select:focus, input:focus, button:focus{outline:3px solid var(--salmon);outline-offset:2px;}
+    .checks{display:flex;flex-direction:column;gap:.3rem;}
+    .checks label{display:flex;align-items:center;gap:.5rem;font-size:.9rem;font-weight:400;cursor:pointer;min-height:32px;}
+    .checks input{width:20px;height:20px;accent-color:var(--morado);}
+    #limpiar{
+      width:100%;padding:.6rem;background:var(--morado);color:#fff;border:none;border-radius:8px;
+      font-size:.92rem;font-weight:600;cursor:pointer;min-height:44px;margin-top:.3rem;
+    }
+    #limpiar:hover{background:var(--morado-osc);}
+    #conteo{font-size:.9rem;font-weight:600;color:var(--morado);margin:.2rem 0 1rem;}
+
+    /* ── Leyenda ── */
+    .leyenda{margin-top:1rem;border-top:1px solid var(--borde);padding-top:.8rem;}
+    .leyenda h3{font-size:.9rem;margin:0 0 .5rem;color:var(--texto);}
+    .leyenda .item{display:flex;align-items:center;gap:.5rem;font-size:.83rem;margin-bottom:.4rem;line-height:1.3;}
+    .leyenda svg{flex-shrink:0;}
+
+    /* ── Mapa ── */
+    #mapa{flex:1;height:100%;}
+    .leaflet-popup-content{font-size:.86rem;line-height:1.5;}
+    .leaflet-popup-content b{color:var(--morado);}
+    .leaflet-popup-content a{color:var(--morado);font-weight:600;}
+
+    /* cluster en paleta (morado con anillo verde manzana) */
+    .cl-wrap{background:transparent !important;}
+    .cl{
+      display:flex;align-items:center;justify-content:center;width:100%;height:100%;
+      background:#5B2B82;color:#fff;border:3px solid #8DC63F;border-radius:50%;
+      font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.4);
+    }
+    .cl span{font-size:.95rem;line-height:1;}
+
+    /* marcador / leyenda: badge circular con pictograma */
+    .pin{
+      display:inline-flex;align-items:center;justify-content:center;
+      border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.45);
+      box-sizing:border-box;
+    }
+    .marcador .pin{cursor:pointer;}
+
+    /* Botón "Mi ubicación" */
+    .btn-ubicacion{
+      display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;
+      background:#fff;color:#2E5AAC;border:2px solid #2E5AAC;border-radius:8px;
+      padding:.45rem .7rem;font-size:.85rem;font-weight:700;min-height:40px;
+      box-shadow:0 1px 4px rgba(0,0,0,.3);font-family:inherit;
+    }
+    .btn-ubicacion:hover,.btn-ubicacion:focus-visible{background:#eaf0fb;outline:3px solid #2E5AAC;outline-offset:2px;}
+    .btn-ubicacion.cargando{opacity:.6;}
+    .ubic-dot{
+      background:#2E5AAC;border:3px solid #fff;border-radius:50%;
+      box-shadow:0 0 0 3px rgba(46,90,172,.35);
+    }
+    body.oscuro .btn-ubicacion{background:#221a30;color:#9bc0ff;border-color:#9bc0ff;}
+
+    /* ── Responsive: panel arriba y filtros colapsables en móvil ── */
+    @media (max-width:680px){
+      #app{flex-direction:column;height:auto;}
+      #panel{width:100%;border-right:none;border-bottom:2px solid var(--borde);max-height:none;}
+      #mapa{height:60vh;min-height:340px;}
+      #toggle-filtros{display:inline-flex;align-items:center;gap:.3rem;}
+      #panel-colapsable{display:none;}
+      #panel-colapsable.abierto{display:block;}
+    }
+    /* Control sensorial: respetar reduce-motion */
+    @media (prefers-reduced-motion: reduce){
+      *{animation:none !important;transition:none !important;}
+    }
+    /* ── Modo oscuro (sincronizado con la página) ── */
+    body.oscuro{background:#1a1426;color:#ece8f0;}
+    body.oscuro #panel{background:#221a30;border-color:#3a3048;}
+    body.oscuro #panel h2,
+    body.oscuro #conteo{color:#c9a9e6;}
+    body.oscuro .pasos{background:#2c2240;color:#ece8f0;}
+    body.oscuro .pasos b{color:#c9a9e6;}
+    body.oscuro legend, body.oscuro .campo-label,
+    body.oscuro .checks label, body.oscuro .leyenda .item{color:#ece8f0;}
+    body.oscuro select, body.oscuro input[type="text"]{
+      background:#1a1426;color:#ece8f0;border-color:#4a3d5c;
+    }
+    body.oscuro .leyenda{border-top-color:#3a3048;}
+    body.oscuro #toggle-filtros{background:#221a30;color:#c9a9e6;border-color:#c9a9e6;}
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Panel de filtros accesible -->
+  <aside id="panel" aria-label="Filtros del mapa">
+    <div class="panel-top">
+      <h2>Filtrar</h2>
+      <button type="button" id="toggle-filtros" aria-expanded="false" aria-controls="panel-colapsable">
+        Mostrar filtros <span aria-hidden="true">▾</span>
+      </button>
+    </div>
+    <p id="conteo" role="status" aria-live="polite"></p>
+    <div id="panel-colapsable">
+    <div class="pasos">
+      <b>1.</b> Elija filtros &nbsp; <b>2.</b> Toque un punto &nbsp; <b>3.</b> Lea la información
+    </div>
+
+    <form id="filtros" aria-label="Controles de filtro">
+      
+        
+        <fieldset>
+          <label class="campo-label" for="f-localidad">Localidad</label>
+          <select id="f-localidad" data-campo="localidad" data-tipo="select">
+            <option value="__todos__">Todos</option>
+            
+            <option value="Bosa">Bosa</option>
+            
+            <option value="Chapinero">Chapinero</option>
+            
+            <option value="Ciudad Bolivar">Ciudad Bolivar</option>
+            
+            <option value="Cundinamarca">Cundinamarca</option>
+            
+            <option value="Engativa">Engativa</option>
+            
+            <option value="Fontibon">Fontibon</option>
+            
+            <option value="Kennedy">Kennedy</option>
+            
+            <option value="Los Martires">Los Martires</option>
+            
+            <option value="Puente Aranda">Puente Aranda</option>
+            
+            <option value="Rafael Uribe Uribe">Rafael Uribe Uribe</option>
+            
+            <option value="San Cristobal">San Cristobal</option>
+            
+            <option value="Santa Fe">Santa Fe</option>
+            
+            <option value="Suba">Suba</option>
+            
+            <option value="Teusaquillo">Teusaquillo</option>
+            
+            <option value="Usaquen">Usaquen</option>
+            
+            <option value="Usme">Usme</option>
+            
+          </select>
+        </fieldset>
+        
+      
+        
+        <fieldset>
+          <label class="campo-label" for="f-tipo">Tipo de centro</label>
+          <select id="f-tipo" data-campo="tipo" data-tipo="select">
+            <option value="__todos__">Todos</option>
+            
+            <option value="CADIS+">CADIS+</option>
+            
+            <option value="Centros Crecer">Centros Crecer</option>
+            
+            <option value="Integrarte Interno">Integrarte Interno</option>
+            
+            <option value="Integrarte Externo">Integrarte Externo</option>
+            
+          </select>
+        </fieldset>
+        
+      
+        
+        <fieldset>
+          <label class="campo-label" for="f-buscar">Buscar por nombre o dirección</label>
+          <input type="text" id="f-buscar" data-tipo="texto" placeholder="Escriba aquí…"
+                 autocomplete="off">
+        </fieldset>
+        
+      
+      <button type="button" id="limpiar">Limpiar filtros</button>
+    </form>
+
+    <div class="leyenda">
+      <h3>Convenciones</h3>
+      
+      <div class="item"><span class="pin" style="background:#5B2B82;width:26px;height:26px"><svg viewBox="0 0 16 16" fill="#fff" width="15" height="15" aria-hidden="true">
+  <path d="M3 0a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h3v-3.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V16h3a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1zm1 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5M4 5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM7.5 5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5m2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM4.5 8h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5m2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5"/>
+</svg></span> <span>CADIS+ (atención e inclusión social)</span></div>
+      
+      <div class="item"><span class="pin" style="background:#4F7A12;width:26px;height:26px"><svg viewBox="0 0 16 16" fill="#fff" width="15" height="15" aria-hidden="true">
+  <path d="M6.174 1.184a2 2 0 0 1 3.652 0A2 2 0 0 1 12.99 3.01a2 2 0 0 1 1.826 3.164 2 2 0 0 1 0 3.652 2 2 0 0 1-1.826 3.164 2 2 0 0 1-3.164 1.826 2 2 0 0 1-3.652 0A2 2 0 0 1 3.01 12.99a2 2 0 0 1-1.826-3.164 2 2 0 0 1 0-3.652A2 2 0 0 1 3.01 3.01a2 2 0 0 1 3.164-1.826M8 1a1 1 0 0 0-.998 1.03l.01.091q.017.116.054.296c.049.241.122.542.213.887.182.688.428 1.513.676 2.314L8 5.762l.045-.144c.248-.8.494-1.626.676-2.314.091-.345.164-.646.213-.887a5 5 0 0 0 .064-.386L9 2a1 1 0 0 0-1-1M2 9l.03-.002.091-.01a5 5 0 0 0 .296-.054c.241-.049.542-.122.887-.213a61 61 0 0 0 2.314-.676L5.762 8l-.144-.045a61 61 0 0 0-2.314-.676 17 17 0 0 0-.887-.213 5 5 0 0 0-.386-.064L2 7a1 1 0 1 0 0 2m7 5-.002-.03a5 5 0 0 0-.064-.386 16 16 0 0 0-.213-.888 61 61 0 0 0-.676-2.314L8 10.238l-.045.144c-.248.8-.494 1.626-.676 2.314-.091.345-.164.646-.213.887a5 5 0 0 0-.064.386L7 14a1 1 0 1 0 2 0m-5.696-2.134.025-.017a5 5 0 0 0 .303-.248c.184-.164.408-.377.661-.629A61 61 0 0 0 5.96 9.23l.103-.111-.147.033a61 61 0 0 0-2.343.572c-.344.093-.64.18-.874.258a5 5 0 0 0-.367.138l-.027.014a1 1 0 1 0 1 1.732zM4.5 14.062a1 1 0 0 0 1.366-.366l.014-.027q.014-.03.036-.084a5 5 0 0 0 .102-.283c.078-.233.165-.53.258-.874a61 61 0 0 0 .572-2.343l.033-.147-.11.102a61 61 0 0 0-1.743 1.667 17 17 0 0 0-.629.66 5 5 0 0 0-.248.304l-.017.025a1 1 0 0 0 .366 1.366m9.196-8.196a1 1 0 0 0-1-1.732l-.025.017a5 5 0 0 0-.303.248 17 17 0 0 0-.661.629A61 61 0 0 0 10.04 6.77l-.102.111.147-.033a61 61 0 0 0 2.342-.572c.345-.093.642-.18.875-.258a5 5 0 0 0 .367-.138zM11.5 1.938a1 1 0 0 0-1.366.366l-.014.027q-.014.03-.036.084a5 5 0 0 0-.102.283c-.078.233-.165.53-.258.875a61 61 0 0 0-.572 2.342l-.033.147.11-.102a61 61 0 0 0 1.743-1.667c.252-.253.465-.477.629-.66a5 5 0 0 0 .248-.304l.017-.025a1 1 0 0 0-.366-1.366M14 9a1 1 0 0 0 0-2l-.03.002a5 5 0 0 0-.386.064c-.242.049-.543.122-.888.213-.688.182-1.513.428-2.314.676L10.238 8l.144.045c.8.248 1.626.494 2.314.676.345.091.646.164.887.213a5 5 0 0 0 .386.064zM1.938 4.5a1 1 0 0 0 .393 1.38l.084.035q.108.045.283.103c.233.078.53.165.874.258a61 61 0 0 0 2.343.572l.147.033-.103-.111a61 61 0 0 0-1.666-1.742 17 17 0 0 0-.66-.629 5 5 0 0 0-.304-.248l-.025-.017a1 1 0 0 0-1.366.366m2.196-1.196.017.025a5 5 0 0 0 .248.303c.164.184.377.408.629.661A61 61 0 0 0 6.77 5.96l.111.102-.033-.147a61 61 0 0 0-.572-2.342c-.093-.345-.18-.642-.258-.875a5 5 0 0 0-.138-.367l-.014-.027a1 1 0 1 0-1.732 1m9.928 8.196a1 1 0 0 0-.366-1.366l-.027-.014a5 5 0 0 0-.367-.138c-.233-.078-.53-.165-.875-.258a61 61 0 0 0-2.342-.572l-.147-.033.102.111a61 61 0 0 0 1.667 1.742c.253.252.477.465.66.629a5 5 0 0 0 .304.248l.025.017a1 1 0 0 0 1.366-.366m-3.928 2.196a1 1 0 0 0 1.732-1l-.017-.025a5 5 0 0 0-.248-.303 17 17 0 0 0-.629-.661A61 61 0 0 0 9.23 10.04l-.111-.102.033.147a61 61 0 0 0 .572 2.342c.093.345.18.642.258.875a5 5 0 0 0 .138.367zM8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3"/>
+</svg></span> <span>Centros Crecer</span></div>
+      
+      <div class="item"><span class="pin" style="background:#E8705B;width:26px;height:26px"><svg viewBox="0 0 16 16" fill="#fff" width="15" height="15" aria-hidden="true">
+  <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5"/>
+</svg></span> <span>Integrarte · atención interna</span></div>
+      
+      <div class="item"><span class="pin" style="background:#B5800A;width:26px;height:26px"><svg viewBox="0 0 16 16" fill="#fff" width="15" height="15" aria-hidden="true">
+  <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5"/>
+</svg></span> <span>Integrarte · atención externa</span></div>
+      
+      <div class="item"><span class="pin" style="background:#8A8A8A;width:26px;height:26px"><svg viewBox="0 0 16 16" fill="#fff" width="15" height="15" aria-hidden="true">
+  <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10m0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6"/>
+</svg></span> <span>Otro centro</span></div>
+      
+    </div>
+    </div><!-- /panel-colapsable -->
+  </aside>
+
+  <!-- Mapa -->
+  <div id="mapa" role="application" aria-label="Mapa de Bogotá con la ubicación de los centros de atención directa de la Secretaría Distrital de Integración Social. Cada forma representa un tipo de centro: CADIS, Crecer e Integrarte."></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet-gesture-handling@1.2.2/dist/leaflet-gesture-handling.min.js"></script>
+
+<script>
+// ── Datos y configuración inyectados desde Python ──
+const FEATURES = [{"lat": 4.594766673756528, "lng": -74.09762478628238, "props": {"id": 0, "cat": "CADIS+", "tooltip": "CENTRO ATENCION DISTRITAL PARA LA INCLUSION CADIS", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO ATENCION DISTRITAL PARA LA INCLUSION CADIS</b><br><em>CADIS+ (atención e inclusión social)</em><br><br><b>Tipo de discapacidad:</b> No disponible<br><b>Edades atendidas:</b> No disponible<br><b>Descripción:</b> No disponible<br><b>Dirección:</b> AC 1 24 B 26<br><b>Teléfono:</b> <a href=\"tel:6013808330 EXT 80151\">6013808330 EXT 80151</a><br><b>Correo:</b> <a href=\"mailto:CPACHONS@SDISL.COM\">CPACHONS@SDISL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 AM - 4:30 PM<br></div>", "localidad": "Los Martires", "tipo": "CADIS+", "buscar": "CENTRO ATENCION DISTRITAL PARA LA INCLUSION CADIS AC 1 24 B 26 Los Martires", "fila": {"Centro": "CENTRO ATENCION DISTRITAL PARA LA INCLUSION CADIS", "Tipo": "CADIS+", "Localidad": "Los Martires", "Dirección": "AC 1 24 B 26", "Teléfono": "<a href=\"tel:6013808330 EXT 80151\">6013808330 EXT 80151</a>"}}}, {"lat": 4.751485951131971, "lng": -74.112891836894, "props": {"id": 1, "cat": "CADIS+", "tooltip": "CENTRO DE ATENCION DISTRITAL PARA LA INCLUSION SOCIAL-CADIS+ TIBABUYES", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO DE ATENCION DISTRITAL PARA LA INCLUSION SOCIAL-CADIS+ TIBABUYES</b><br><em>CADIS+ (atención e inclusión social)</em><br><br><b>Tipo de discapacidad:</b> No disponible<br><b>Edades atendidas:</b> No disponible<br><b>Descripción:</b> No disponible<br><b>Dirección:</b> CL 144 136 A 65<br><b>Teléfono:</b> <a href=\"tel:3112000508\">3112000508</a><br><b>Correo:</b> <a href=\"mailto:ICRODRIGUEZG@SDIS.GOV.CO\">ICRODRIGUEZG@SDIS.GOV.CO</a><br><b>Horario:</b> LUNES A VIERNES 8:00 AM - 4:30 PM<br></div>", "localidad": "Suba", "tipo": "CADIS+", "buscar": "CENTRO DE ATENCION DISTRITAL PARA LA INCLUSION SOCIAL-CADIS+ TIBABUYES CL 144 136 A 65 Suba", "fila": {"Centro": "CENTRO DE ATENCION DISTRITAL PARA LA INCLUSION SOCIAL-CADIS+ TIBABUYES", "Tipo": "CADIS+", "Localidad": "Suba", "Dirección": "CL 144 136 A 65", "Teléfono": "<a href=\"tel:3112000508\">3112000508</a>"}}}, {"lat": 4.557694372900379, "lng": -74.08689486835436, "props": {"id": 2, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER LA VICTORIA", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER LA VICTORIA</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> CL 32 A SUR 7 32 ESTE<br><b>Teléfono:</b> <a href=\"tel:6012062169 / 3203781066\">6012062169 / 3203781066</a><br><b>Correo:</b> <a href=\"mailto:CRECERLAVICTORIA@SDIS.GOV.CO / CRECER.LAVICTORIASDIS@GMAIL.COM\">CRECERLAVICTORIA@SDIS.GOV.CO / CRECER.LAVICTORIASDIS@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "San Cristobal", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER LA VICTORIA CL 32 A SUR 7 32 ESTE San Cristobal", "fila": {"Centro": "CENTRO CRECER LA VICTORIA", "Tipo": "Centros Crecer", "Localidad": "San Cristobal", "Dirección": "CL 32 A SUR 7 32 ESTE", "Teléfono": "<a href=\"tel:6012062169 / 3203781066\">6012062169 / 3203781066</a>"}}}, {"lat": 4.645733950643901, "lng": -74.15652831210046, "props": {"id": 3, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER CAMPO ALEGRE CALANDAIMA", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER CAMPO ALEGRE CALANDAIMA</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> KR 88 6 A 36<br><b>Teléfono:</b> <a href=\"tel:3108073472\">3108073472</a><br><b>Correo:</b> <a href=\"mailto:CRECERYAVANZARCALANDAIMASDIS@GMAIL.COM\">CRECERYAVANZARCALANDAIMASDIS@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Kennedy", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER CAMPO ALEGRE CALANDAIMA KR 88 6 A 36 Kennedy", "fila": {"Centro": "CENTRO CRECER CAMPO ALEGRE CALANDAIMA", "Tipo": "Centros Crecer", "Localidad": "Kennedy", "Dirección": "KR 88 6 A 36", "Teléfono": "<a href=\"tel:3108073472\">3108073472</a>"}}}, {"lat": 4.681407570026702, "lng": -74.14405673510973, "props": {"id": 4, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER FONTIBON", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER FONTIBON</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> CL 22 F 106 26<br><b>Teléfono:</b> <a href=\"tel:6012984076/ 3144183752\">6012984076/ 3144183752</a><br><b>Correo:</b> <a href=\"mailto:CRECERFONTIBON@SDIS.GOV.CO / CENTROCRECERFONTIBON2@GMAIL.COM\">CRECERFONTIBON@SDIS.GOV.CO / CENTROCRECERFONTIBON2@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Fontibon", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER FONTIBON CL 22 F 106 26 Fontibon", "fila": {"Centro": "CENTRO CRECER FONTIBON", "Tipo": "Centros Crecer", "Localidad": "Fontibon", "Dirección": "CL 22 F 106 26", "Teléfono": "<a href=\"tel:6012984076/ 3144183752\">6012984076/ 3144183752</a>"}}}, {"lat": 4.683130809680034, "lng": -74.10494429694661, "props": {"id": 5, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER LOS ANGELES", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER LOS ANGELES</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> KR 77 BIS 64 I 50<br><b>Teléfono:</b> <a href=\"tel:3102314664\">3102314664</a><br><b>Correo:</b> <a href=\"mailto:CRECERLOSANGELES@SDIS.GOV.CO  /  CENTROCRECERLOSANGELES@GMAIL.COM\">CRECERLOSANGELES@SDIS.GOV.CO  /  CENTROCRECERLOSANGELES@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Engativa", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER LOS ANGELES KR 77 BIS 64 I 50 Engativa", "fila": {"Centro": "CENTRO CRECER LOS ANGELES", "Tipo": "Centros Crecer", "Localidad": "Engativa", "Dirección": "KR 77 BIS 64 I 50", "Teléfono": "<a href=\"tel:3102314664\">3102314664</a>"}}}, {"lat": 4.7293153475258976, "lng": -74.09320318592745, "props": {"id": 6, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER RINCON", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER RINCON</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> KR 95 A 130 81<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CRECERSUBARINCON@SDIS.GOV.CO / CENTROCRECERRINCON2024@GMAIL.COM\">CRECERSUBARINCON@SDIS.GOV.CO / CENTROCRECERRINCON2024@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:30 AM - 4:00 PM<br></div>", "localidad": "Suba", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER RINCON KR 95 A 130 81 Suba", "fila": {"Centro": "CENTRO CRECER RINCON", "Tipo": "Centros Crecer", "Localidad": "Suba", "Dirección": "KR 95 A 130 81", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.594814722436313, "lng": -74.09773834141912, "props": {"id": 7, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER MARTIRES", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER MARTIRES</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> AC 1 24 B 26<br><b>Teléfono:</b> <a href=\"tel:3247062069\">3247062069</a><br><b>Correo:</b> <a href=\"mailto:CRECERMARTIRES@SDIS.GOV.CO / CRECERMARTIRES2026@GMAIL.COM\">CRECERMARTIRES@SDIS.GOV.CO / CRECERMARTIRES2026@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Los Martires", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER MARTIRES AC 1 24 B 26 Los Martires", "fila": {"Centro": "CENTRO CRECER MARTIRES", "Tipo": "Centros Crecer", "Localidad": "Los Martires", "Dirección": "AC 1 24 B 26", "Teléfono": "<a href=\"tel:3247062069\">3247062069</a>"}}}, {"lat": 4.576903838982795, "lng": -74.16713605735322, "props": {"id": 8, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER ECOPARQUE SIERRA MORENA", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER ECOPARQUE SIERRA MORENA</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> DG 73 C SUR 57 17<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CRECERECOPARQUESM@SDIS.GOV.CO / CENTROCRECERARBORIZADORAALTA2@GMAIL.COM\">CRECERECOPARQUESM@SDIS.GOV.CO / CENTROCRECERARBORIZADORAALTA2@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Ciudad Bolivar", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER ECOPARQUE SIERRA MORENA DG 73 C SUR 57 17 Ciudad Bolivar", "fila": {"Centro": "CENTRO CRECER ECOPARQUE SIERRA MORENA", "Tipo": "Centros Crecer", "Localidad": "Ciudad Bolivar", "Dirección": "DG 73 C SUR 57 17", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.547966962977788, "lng": -74.14866163490173, "props": {"id": 9, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER VISTA HERMOSA", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER VISTA HERMOSA</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> DG 71 B SUR 18 I 20<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CRECERVISTAHERMOSA@SDIS.GOV.CO / VISTAHERMOSAS2024@GMAIL.COM\">CRECERVISTAHERMOSA@SDIS.GOV.CO / VISTAHERMOSAS2024@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Ciudad Bolivar", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER VISTA HERMOSA DG 71 B SUR 18 I 20 Ciudad Bolivar", "fila": {"Centro": "CENTRO CRECER VISTA HERMOSA", "Tipo": "Centros Crecer", "Localidad": "Ciudad Bolivar", "Dirección": "DG 71 B SUR 18 I 20", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.741814000148316, "lng": -74.0238514700241, "props": {"id": 10, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER USAQUEN", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER USAQUEN</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> CL 165 7 52<br><b>Teléfono:</b> <a href=\"tel:6013808331 ext 67360\">6013808331 ext 67360</a><br><b>Correo:</b> <a href=\"mailto:CRECERUSAQUEN@SDIS.GOV.CO CENTROCRECERUSAQUENSDIS1@GMAIL.COM\">CRECERUSAQUEN@SDIS.GOV.CO CENTROCRECERUSAQUENSDIS1@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Usaquen", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER USAQUEN CL 165 7 52 Usaquen", "fila": {"Centro": "CENTRO CRECER USAQUEN", "Tipo": "Centros Crecer", "Localidad": "Usaquen", "Dirección": "CL 165 7 52", "Teléfono": "<a href=\"tel:6013808331 ext 67360\">6013808331 ext 67360</a>"}}}, {"lat": 4.589176492213524, "lng": -74.07475776738156, "props": {"id": 11, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER LOURDES", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER LOURDES</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> KR 2 4 10<br><b>Teléfono:</b> <a href=\"tel:6013808330 EXT  52004\">6013808330 EXT  52004</a><br><b>Correo:</b> <a href=\"mailto:CRECERLOURDES@SDIS.GOV.CO / CENTROCRECERLOURDES2026@GMAIL.COM\">CRECERLOURDES@SDIS.GOV.CO / CENTROCRECERLOURDES2026@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Santa Fe", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER LOURDES KR 2 4 10 Santa Fe", "fila": {"Centro": "CENTRO CRECER LOURDES", "Tipo": "Centros Crecer", "Localidad": "Santa Fe", "Dirección": "KR 2 4 10", "Teléfono": "<a href=\"tel:6013808330 EXT  52004\">6013808330 EXT  52004</a>"}}}, {"lat": 4.634113191799096, "lng": -74.05817149226617, "props": {"id": 12, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER SIN LIMITES PARDO RUBIO", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER SIN LIMITES PARDO RUBIO</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> TV 3 BIS ESTE 47 B 45<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CRECERSINLIMITESPR@SDIS.GOV.CO / CENTROCRECERSINLIMITES@GMAIL.COM\">CRECERSINLIMITESPR@SDIS.GOV.CO / CENTROCRECERSINLIMITES@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Chapinero", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER SIN LIMITES PARDO RUBIO TV 3 BIS ESTE 47 B 45 Chapinero", "fila": {"Centro": "CENTRO CRECER SIN LIMITES PARDO RUBIO", "Tipo": "Centros Crecer", "Localidad": "Chapinero", "Dirección": "TV 3 BIS ESTE 47 B 45", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.51429651612566, "lng": -74.11095764640795, "props": {"id": 13, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER TEJARES", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER TEJARES</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> KR 8 B 75 A 52 SUR<br><b>Teléfono:</b> <a href=\"tel:3223110244\">3223110244</a><br><b>Correo:</b> <a href=\"mailto:CRECERTEJARES@SDIS.GOV.CO / CTEJARESUSME@GMAIL.COM\">CRECERTEJARES@SDIS.GOV.CO / CTEJARESUSME@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Usme", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER TEJARES KR 8 B 75 A 52 SUR Usme", "fila": {"Centro": "CENTRO CRECER TEJARES", "Tipo": "Centros Crecer", "Localidad": "Usme", "Dirección": "KR 8 B 75 A 52 SUR", "Teléfono": "<a href=\"tel:3223110244\">3223110244</a>"}}}, {"lat": 4.6105068851778555, "lng": -74.19191731695423, "props": {"id": 14, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER BOSA", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER BOSA</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> KR 81 C 68 A 24 SUR<br><b>Teléfono:</b> <a href=\"tel:6012222839\">6012222839</a><br><b>Correo:</b> <a href=\"mailto:CRECERBOSA@SDIS.GOV.CO / CENTROCRECERBOSA2026@GMAIL.COM\">CRECERBOSA@SDIS.GOV.CO / CENTROCRECERBOSA2026@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Bosa", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER BOSA KR 81 C 68 A 24 SUR Bosa", "fila": {"Centro": "CENTRO CRECER BOSA", "Tipo": "Centros Crecer", "Localidad": "Bosa", "Dirección": "KR 81 C 68 A 24 SUR", "Teléfono": "<a href=\"tel:6012222839\">6012222839</a>"}}}, {"lat": 4.58201607664193, "lng": -74.1134641302053, "props": {"id": 15, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER RAFAEL URIBE", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER RAFAEL URIBE</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> CL 31 B SUR 23 B 14<br><b>Teléfono:</b> <a href=\"tel:6017695814\">6017695814</a><br><b>Correo:</b> <a href=\"mailto:CRECERRAFAELUU@SDIS.GOV.CO / CRECER.RUU@GMAIL.COM\">CRECERRAFAELUU@SDIS.GOV.CO / CRECER.RUU@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Rafael Uribe Uribe", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER RAFAEL URIBE CL 31 B SUR 23 B 14 Rafael Uribe Uribe", "fila": {"Centro": "CENTRO CRECER RAFAEL URIBE", "Tipo": "Centros Crecer", "Localidad": "Rafael Uribe Uribe", "Dirección": "CL 31 B SUR 23 B 14", "Teléfono": "<a href=\"tel:6017695814\">6017695814</a>"}}}, {"lat": 4.575001217793544, "lng": -74.08081150240312, "props": {"id": 16, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER BALCANES", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER BALCANES</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> CL 11 SUR 1 B 10 ESTE<br><b>Teléfono:</b> <a href=\"tel:6013808330 / EXT 67440 / 3102385351\">6013808330 / EXT 67440 / 3102385351</a><br><b>Correo:</b> <a href=\"mailto:CRECERBALCANES@SDIS.GOV.CO / CRECER.BALCANESSDIS@GMAIL.COM\">CRECERBALCANES@SDIS.GOV.CO / CRECER.BALCANESSDIS@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "San Cristobal", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER BALCANES CL 11 SUR 1 B 10 ESTE San Cristobal", "fila": {"Centro": "CENTRO CRECER BALCANES", "Tipo": "Centros Crecer", "Localidad": "San Cristobal", "Dirección": "CL 11 SUR 1 B 10 ESTE", "Teléfono": "<a href=\"tel:6013808330 / EXT 67440 / 3102385351\">6013808330 / EXT 67440 / 3102385351</a>"}}}, {"lat": 4.617687026466597, "lng": -74.12334771116817, "props": {"id": 17, "cat": "Centros Crecer", "tooltip": "CENTRO CRECER PUENTE ARANDA", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO CRECER PUENTE ARANDA</b><br><em>Centros Crecer</em><br><br><b>Tipo de discapacidad:</b> Intelectual / Múltiple<br><b>Edades atendidas:</b> 6-17<br><b>Descripción:</b> Servicio destinado a atender a los niños, niñas, adolescentes y/o jóvenes con discapacidad a través de acciones que aporten a la construcción del proyecto de vida y al desarrollo de sus habilidades y capacidades, favoreciendo procesos de inclusión<br><b>Dirección:</b> DG 2 57 A 07 / 39<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CRECERPUENTEARANDA@SDIS.GOV.CO / PUENTEARANDACENTROCRECER@GMAIL.COM\">CRECERPUENTEARANDA@SDIS.GOV.CO / PUENTEARANDACENTROCRECER@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 7:00 AM - 4:00 PM<br></div>", "localidad": "Puente Aranda", "tipo": "Centros Crecer", "buscar": "CENTRO CRECER PUENTE ARANDA DG 2 57 A 07 / 39 Puente Aranda", "fila": {"Centro": "CENTRO CRECER PUENTE ARANDA", "Tipo": "Centros Crecer", "Localidad": "Puente Aranda", "Dirección": "DG 2 57 A 07 / 39", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.6753656934133545, "lng": -74.13740290391877, "props": {"id": 18, "cat": "Integrarte Externo", "tooltip": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 5", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 5</b><br><em>Integrarte · atención externa</em><br><br><b>Tipo de discapacidad:</b> Intelectual<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Lugar en el que se atienden personas con discapacidad cognitiva, psicosocial o física, en condición de vulnerabilidad, de 18 años hasta los 59 años y 11 meses que requieran apoyos de extensos a generalizados, que habiten en Bogotá D.C. y que no cuen<br><b>Dirección:</b> CL 22 G 96 I 42<br><b>Teléfono:</b> <a href=\"tel:601 3464818\">601 3464818</a><br><b>Correo:</b> <a href=\"mailto:CIAEG52025@GMAIL.COM\">CIAEG52025@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 A.M. A 4:00 P.M.<br></div>", "localidad": "Fontibon", "tipo": "Integrarte Externo", "buscar": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 5 CL 22 G 96 I 42 Fontibon", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 5", "Tipo": "Integrarte Externo", "Localidad": "Fontibon", "Dirección": "CL 22 G 96 I 42", "Teléfono": "<a href=\"tel:601 3464818\">601 3464818</a>"}}}, {"lat": 4.65002411405449, "lng": -74.0738632420896, "props": {"id": 19, "cat": "Integrarte Externo", "tooltip": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 1", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 1</b><br><em>Integrarte · atención externa</em><br><br><b>Tipo de discapacidad:</b> Intelectual<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Lugar en el que se atienden personas con discapacidad cognitiva, psicosocial o física, en condición de vulnerabilidad, de 18 años hasta los 59 años y 11 meses que requieran apoyos de extensos a generalizados, que habiten en Bogotá D.C. y que no cuen<br><b>Dirección:</b> KR 26 61 F 19<br><b>Teléfono:</b> <a href=\"tel:6013475746 / 3133903313 / 3143447109\">6013475746 / 3133903313 / 3143447109</a><br><b>Correo:</b> <a href=\"mailto:CIAEGRUPO1@GMAIL.COM\">CIAEGRUPO1@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 A.M. A 4:00 P.M.<br></div>", "localidad": "Teusaquillo", "tipo": "Integrarte Externo", "buscar": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 1 KR 26 61 F 19 Teusaquillo", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 1", "Tipo": "Integrarte Externo", "Localidad": "Teusaquillo", "Dirección": "KR 26 61 F 19", "Teléfono": "<a href=\"tel:6013475746 / 3133903313 / 3143447109\">6013475746 / 3133903313 / 3143447109</a>"}}}, {"lat": 4.589341813726563, "lng": -74.08190609688188, "props": {"id": 20, "cat": "Integrarte Externo", "tooltip": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 4", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 4</b><br><em>Integrarte · atención externa</em><br><br><b>Tipo de discapacidad:</b> Intelectual<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Lugar en el que se atienden personas con discapacidad cognitiva, psicosocial o física, en condición de vulnerabilidad, de 18 años hasta los 59 años y 11 meses que requieran apoyos de extensos a generalizados, que habiten en Bogotá D.C. y que no cuen<br><b>Dirección:</b> KR 8 1 F 13<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:INTEGRARTEGRUPO42025@GMAIL.COM\">INTEGRARTEGRUPO42025@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 A.M. A 4:00 P.M.<br></div>", "localidad": "Santa Fe", "tipo": "Integrarte Externo", "buscar": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 4 KR 8 1 F 13 Santa Fe", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 4", "Tipo": "Integrarte Externo", "Localidad": "Santa Fe", "Dirección": "KR 8 1 F 13", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.601925054103365, "lng": -74.18825994036096, "props": {"id": 21, "cat": "Integrarte Externo", "tooltip": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 8", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 8</b><br><em>Integrarte · atención externa</em><br><br><b>Tipo de discapacidad:</b> Intelectual<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Lugar en el que se atienden personas con discapacidad cognitiva, psicosocial o física, en condición de vulnerabilidad, de 18 años hasta los 59 años y 11 meses que requieran apoyos de extensos a generalizados, que habiten en Bogotá D.C. y que no cuen<br><b>Dirección:</b> CL 68 SUR 78 C 21<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CINTEGRARTEEXTERNOBOSA8210@GMAIL.COM\">CINTEGRARTEEXTERNOBOSA8210@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 A.M. A 4:00 P.M.<br></div>", "localidad": "Bosa", "tipo": "Integrarte Externo", "buscar": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 8 CL 68 SUR 78 C 21 Bosa", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 8", "Tipo": "Integrarte Externo", "Localidad": "Bosa", "Dirección": "CL 68 SUR 78 C 21", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.670188124859901, "lng": -74.10322249873649, "props": {"id": 22, "cat": "Integrarte Externo", "tooltip": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 2", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 2</b><br><em>Integrarte · atención externa</em><br><br><b>Tipo de discapacidad:</b> Intelectual<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Lugar en el que se atienden personas con discapacidad cognitiva, psicosocial o física, en condición de vulnerabilidad, de 18 años hasta los 59 años y 11 meses que requieran apoyos de extensos a generalizados, que habiten en Bogotá D.C. y que no cuen<br><b>Dirección:</b> KR 70 C 54 69<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:INTEGRARTEG2.2025@GMAIL.COM\">INTEGRARTEG2.2025@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 A.M. A 4:00 P.M.<br></div>", "localidad": "Engativa", "tipo": "Integrarte Externo", "buscar": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 2 KR 70 C 54 69 Engativa", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 2", "Tipo": "Integrarte Externo", "Localidad": "Engativa", "Dirección": "KR 70 C 54 69", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.576296195750269, "lng": -74.11342132278706, "props": {"id": 23, "cat": "Integrarte Externo", "tooltip": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 3", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 3</b><br><em>Integrarte · atención externa</em><br><br><b>Tipo de discapacidad:</b> Intelectual<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Lugar en el que se atienden personas con discapacidad cognitiva, psicosocial o física, en condición de vulnerabilidad, de 18 años hasta los 59 años y 11 meses que requieran apoyos de extensos a generalizados, que habiten en Bogotá D.C. y que no cuen<br><b>Dirección:</b> KR 13 H 32 36 SUR<br><b>Teléfono:</b> <a href=\"tel:6019260379 / 3229710928\">6019260379 / 3229710928</a><br><b>Correo:</b> <a href=\"mailto:CIAE8207LOTE3@GMAIL.COM\">CIAE8207LOTE3@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 A.M. A 4:00 P.M.<br></div>", "localidad": "Rafael Uribe Uribe", "tipo": "Integrarte Externo", "buscar": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 3 KR 13 H 32 36 SUR Rafael Uribe Uribe", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 3", "Tipo": "Integrarte Externo", "Localidad": "Rafael Uribe Uribe", "Dirección": "KR 13 H 32 36 SUR", "Teléfono": "<a href=\"tel:6019260379 / 3229710928\">6019260379 / 3229710928</a>"}}}, {"lat": 4.698584226653512, "lng": -74.1142027420999, "props": {"id": 24, "cat": "Integrarte Externo", "tooltip": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 6", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 6</b><br><em>Integrarte · atención externa</em><br><br><b>Tipo de discapacidad:</b> Intelectual<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Lugar en el que se atienden personas con discapacidad cognitiva, psicosocial o física, en condición de vulnerabilidad, de 18 años hasta los 59 años y 11 meses que requieran apoyos de extensos a generalizados, que habiten en Bogotá D.C. y que no cuen<br><b>Dirección:</b> CL 71 A 95 31<br><b>Teléfono:</b> <a href=\"tel:6016624283\">6016624283</a><br><b>Correo:</b> <a href=\"mailto:CENTROINTEGRARTEAEXTERNA6@GMAIL.COM\">CENTROINTEGRARTEAEXTERNA6@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 A.M. A 4:00 P.M.<br></div>", "localidad": "Engativa", "tipo": "Integrarte Externo", "buscar": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 6 CL 71 A 95 31 Engativa", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 6", "Tipo": "Integrarte Externo", "Localidad": "Engativa", "Dirección": "CL 71 A 95 31", "Teléfono": "<a href=\"tel:6016624283\">6016624283</a>"}}}, {"lat": 4.741798216160371, "lng": -74.10291107798032, "props": {"id": 25, "cat": "Integrarte Externo", "tooltip": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 9", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 9</b><br><em>Integrarte · atención externa</em><br><br><b>Tipo de discapacidad:</b> Intelectual<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Lugar en el que se atienden personas con discapacidad cognitiva, psicosocial o física, en condición de vulnerabilidad, de 18 años hasta los 59 años y 11 meses que requieran apoyos de extensos a generalizados, que habiten en Bogotá D.C. y que no cuen<br><b>Dirección:</b> KR 111 BIS 136 A 8<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CIAE8211GRUPO9SUBA@GMAIL.COM\">CIAE8211GRUPO9SUBA@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 A.M. A 4:00 P.M.<br></div>", "localidad": "Suba", "tipo": "Integrarte Externo", "buscar": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 9 KR 111 BIS 136 A 8 Suba", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION EXTERNO GRUPO 9", "Tipo": "Integrarte Externo", "Localidad": "Suba", "Dirección": "KR 111 BIS 136 A 8", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.6096012836911395, "lng": -74.15823992431359, "props": {"id": 26, "cat": "Integrarte Externo", "tooltip": "CENTRO INTEGRARTE ATENCION EXTERNA GRUPO 11", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION EXTERNA GRUPO 11</b><br><em>Integrarte · atención externa</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Lugar en el que se atienden personas con discapacidad cognitiva, psicosocial o física, en condición de vulnerabilidad, de 18 años hasta los 59 años y 11 meses que requieran apoyos de extensos a generalizados, que habiten en Bogotá D.C. y que no cuen<br><b>Dirección:</b> KR 74 42 G 52 SUR<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:GRUPO11.2026@GMAIL.COM\">GRUPO11.2026@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 A.M. A 4:00 P.M.<br></div>", "localidad": "Kennedy", "tipo": "Integrarte Externo", "buscar": "CENTRO INTEGRARTE ATENCION EXTERNA GRUPO 11 KR 74 42 G 52 SUR Kennedy", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION EXTERNA GRUPO 11", "Tipo": "Integrarte Externo", "Localidad": "Kennedy", "Dirección": "KR 74 42 G 52 SUR", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.574799549202029, "lng": -74.0807233507243, "props": {"id": 27, "cat": "Integrarte Externo", "tooltip": "CENTROS INTEGRARTE ATENCION EXTERNA GRUPO 7", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTROS INTEGRARTE ATENCION EXTERNA GRUPO 7</b><br><em>Integrarte · atención externa</em><br><br><b>Tipo de discapacidad:</b> No disponible<br><b>Edades atendidas:</b> No disponible<br><b>Descripción:</b> No disponible<br><b>Dirección:</b> CL 11 SUR 1 B 10 ESTE<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CIAEG7.ALTERNO@GMAIL.COM\">CIAEG7.ALTERNO@GMAIL.COM</a><br><b>Horario:</b> LUNES A VIERNES 8:00 AM - 4:30 PM<br></div>", "localidad": "San Cristobal", "tipo": "Integrarte Externo", "buscar": "CENTROS INTEGRARTE ATENCION EXTERNA GRUPO 7 CL 11 SUR 1 B 10 ESTE San Cristobal", "fila": {"Centro": "CENTROS INTEGRARTE ATENCION EXTERNA GRUPO 7", "Tipo": "Integrarte Externo", "Localidad": "San Cristobal", "Dirección": "CL 11 SUR 1 B 10 ESTE", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.970752245728884, "lng": -74.30109681115951, "props": {"id": 28, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 9", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 9</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> KILÓMETRO 44 VÍA BOGOTÁ LA VEGA, VEREDA ARRAYAN ALTO, FINCA EL UVAL (VILLA LUNA) SAN FRANCISCO<br><b>Teléfono:</b> <a href=\"tel:601 2672453\">601 2672453</a><br><b>Correo:</b> <a href=\"mailto:INTEGRARTEINTERNOG9SF@GMAIL.COM\">INTEGRARTEINTERNOG9SF@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Cundinamarca", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 9 KILÓMETRO 44 VÍA BOGOTÁ LA VEGA, VEREDA ARRAYAN ALTO, FINCA EL UVAL (VILLA LUNA) SAN FRANCISCO Cundinamarca", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 9", "Tipo": "Integrarte Interno", "Localidad": "Cundinamarca", "Dirección": "KILÓMETRO 44 VÍA BOGOTÁ LA VEGA, VEREDA ARRAYAN ALTO, FINCA EL UVAL (VILLA LUNA) SAN FRANCISCO", "Teléfono": "<a href=\"tel:601 2672453\">601 2672453</a>"}}}, {"lat": 4.627892157750554, "lng": -74.0747298118099, "props": {"id": 29, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 1", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 1</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> CL 39 21 30<br><b>Teléfono:</b> <a href=\"tel:6015366355\">6015366355</a><br><b>Correo:</b> <a href=\"mailto:INTEGRARTEINTERNOG1@GMAIL.COM\">INTEGRARTEINTERNOG1@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Teusaquillo", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 1 CL 39 21 30 Teusaquillo", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 1", "Tipo": "Integrarte Interno", "Localidad": "Teusaquillo", "Dirección": "CL 39 21 30", "Teléfono": "<a href=\"tel:6015366355\">6015366355</a>"}}}, {"lat": 4.68481887715193, "lng": -74.13941422555172, "props": {"id": 30, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 2", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 2</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> CL 23 H BIS 104 B 67<br><b>Teléfono:</b> <a href=\"tel:6015366355\">6015366355</a><br><b>Correo:</b> <a href=\"mailto:CIAIGRUPO2@GMAIL.COM\">CIAIGRUPO2@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Fontibon", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 2 CL 23 H BIS 104 B 67 Fontibon", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 2", "Tipo": "Integrarte Interno", "Localidad": "Fontibon", "Dirección": "CL 23 H BIS 104 B 67", "Teléfono": "<a href=\"tel:6015366355\">6015366355</a>"}}}, {"lat": 4.517235443842987, "lng": -74.5922807113823, "props": {"id": 31, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 3", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 3</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> VEREDA GUACAMAYAS FINCA YULUKA, APULO - CUNDINAMARCA<br><b>Teléfono:</b> <a href=\"tel:6015366355\">6015366355</a><br><b>Correo:</b> <a href=\"mailto:CIAIGRUPO3APULO@GMAIL.COM\">CIAIGRUPO3APULO@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Cundinamarca", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 3 VEREDA GUACAMAYAS FINCA YULUKA, APULO - CUNDINAMARCA Cundinamarca", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 3", "Tipo": "Integrarte Interno", "Localidad": "Cundinamarca", "Dirección": "VEREDA GUACAMAYAS FINCA YULUKA, APULO - CUNDINAMARCA", "Teléfono": "<a href=\"tel:6015366355\">6015366355</a>"}}}, {"lat": 4.970911457646381, "lng": -74.30106619387968, "props": {"id": 32, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 4", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 4</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> KILÓMETRO 44 VÍA BOGOTÁ LA VEGA, VEREDA ARRAYAN ALTO, FINCA EL UVAL  (VILLA LUNA), SAN FRANCISCO<br><b>Teléfono:</b> <a href=\"tel:6015366355\">6015366355</a><br><b>Correo:</b> <a href=\"mailto:CIAIGRUPO4SANFRANCISCO@GMAIL.COM\">CIAIGRUPO4SANFRANCISCO@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Cundinamarca", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 4 KILÓMETRO 44 VÍA BOGOTÁ LA VEGA, VEREDA ARRAYAN ALTO, FINCA EL UVAL  (VILLA LUNA), SAN FRANCISCO Cundinamarca", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 4", "Tipo": "Integrarte Interno", "Localidad": "Cundinamarca", "Dirección": "KILÓMETRO 44 VÍA BOGOTÁ LA VEGA, VEREDA ARRAYAN ALTO, FINCA EL UVAL  (VILLA LUNA), SAN FRANCISCO", "Teléfono": "<a href=\"tel:6015366355\">6015366355</a>"}}}, {"lat": 5.09947675995364, "lng": -73.79864477961124, "props": {"id": 33, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 8", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 8</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> CL 5 5 45 SUESCA<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:INTEGRARTEINTERNOG8@GMAIL.COM\">INTEGRARTEINTERNOG8@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Cundinamarca", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 8 CL 5 5 45 SUESCA Cundinamarca", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 8", "Tipo": "Integrarte Interno", "Localidad": "Cundinamarca", "Dirección": "CL 5 5 45 SUESCA", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.7455952176928395, "lng": -74.08283424072499, "props": {"id": 34, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 7", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 7</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> KR 90 149 57<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CIAPGRUPO7@GMAIL.COM\">CIAPGRUPO7@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Suba", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 7 KR 90 149 57 Suba", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 7", "Tipo": "Integrarte Interno", "Localidad": "Suba", "Dirección": "KR 90 149 57", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.847761102096059, "lng": -74.06085292835496, "props": {"id": 35, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 5", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 5</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> KR 5 A 1 68 SUR  CHÍA - VEREDA LA BALSA<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:INTEGRARTEINTERNOG5@GMAIL.COM\">INTEGRARTEINTERNOG5@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Cundinamarca", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 5 KR 5 A 1 68 SUR  CHÍA - VEREDA LA BALSA Cundinamarca", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 5", "Tipo": "Integrarte Interno", "Localidad": "Cundinamarca", "Dirección": "KR 5 A 1 68 SUR  CHÍA - VEREDA LA BALSA", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.64655421811501, "lng": -74.1490581431833, "props": {"id": 36, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 6", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 6</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> KR 85 8 A 36<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CIAIG6CONVENIO7361@GMAIL.COM\">CIAIG6CONVENIO7361@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Kennedy", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 6 KR 85 8 A 36 Kennedy", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 6", "Tipo": "Integrarte Interno", "Localidad": "Kennedy", "Dirección": "KR 85 8 A 36", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.746108563579187, "lng": -74.08277845265093, "props": {"id": 37, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 10", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 10</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> KR 90 149 73<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CINTEGRARTEG10@GMAIL.COM\">CINTEGRARTEG10@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Suba", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 10 KR 90 149 73 Suba", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 10", "Tipo": "Integrarte Interno", "Localidad": "Suba", "Dirección": "KR 90 149 73", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.627728286776197, "lng": -74.48568924734089, "props": {"id": 38, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 11", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 11</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> KR 40 9 A 129 VEREDA EL HATO, FINCA EL RETIRO LA MESA<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CIAIG11CONVENIO7368@GMAIL.COM\">CIAIG11CONVENIO7368@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Cundinamarca", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 11 KR 40 9 A 129 VEREDA EL HATO, FINCA EL RETIRO LA MESA Cundinamarca", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 11", "Tipo": "Integrarte Interno", "Localidad": "Cundinamarca", "Dirección": "KR 40 9 A 129 VEREDA EL HATO, FINCA EL RETIRO LA MESA", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.7460751202817635, "lng": -74.08279337187115, "props": {"id": 39, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 12", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 12</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> KR 90 149 73<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:CINTEGRARTEG12@GMAIL.COM\">CINTEGRARTEG12@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Suba", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 12 KR 90 149 73 Suba", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 12", "Tipo": "Integrarte Interno", "Localidad": "Suba", "Dirección": "KR 90 149 73", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}, {"lat": 4.970502513575028, "lng": -74.30096235042947, "props": {"id": 40, "cat": "Integrarte Interno", "tooltip": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 13", "popup": "<div style=\"max-width:280px\"><b style=\"font-size:14px\">CENTRO INTEGRARTE ATENCION INTERNA GRUPO 13</b><br><em>Integrarte · atención interna</em><br><br><b>Tipo de discapacidad:</b> Intelectual, Psicosocial, Fisica, Multiple<br><b>Edades atendidas:</b> 18-59<br><b>Descripción:</b> Servicio para promover el desarrollo y fortalecimiento de competencias que permita a las personas con discapacidad, adquirir destrezas en la ejecución de sus actividades básicas e instrumentales de la vida diaria, aportando a aumentar los niveles de in<br><b>Dirección:</b> KILÓMETRO 44 VÍA BOGOTÁ LA VEGA, VEREDA ARRAYAN ALTO, FINCA EL GUAYABALITO (VILLA TATA) SAN FRANCISCO<br><b>Teléfono:</b> <a href=\"tel:6013808330\">6013808330</a><br><b>Correo:</b> <a href=\"mailto:INTEGRARTEG13SF@GMAIL.COM\">INTEGRARTEG13SF@GMAIL.COM</a><br><b>Horario:</b> LUNES A DOMINGO 24 HORAS<br></div>", "localidad": "Cundinamarca", "tipo": "Integrarte Interno", "buscar": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 13 KILÓMETRO 44 VÍA BOGOTÁ LA VEGA, VEREDA ARRAYAN ALTO, FINCA EL GUAYABALITO (VILLA TATA) SAN FRANCISCO Cundinamarca", "fila": {"Centro": "CENTRO INTEGRARTE ATENCION INTERNA GRUPO 13", "Tipo": "Integrarte Interno", "Localidad": "Cundinamarca", "Dirección": "KILÓMETRO 44 VÍA BOGOTÁ LA VEGA, VEREDA ARRAYAN ALTO, FINCA EL GUAYABALITO (VILLA TATA) SAN FRANCISCO", "Teléfono": "<a href=\"tel:6013808330\">6013808330</a>"}}}];
+const ESTILOS  = {"CADIS+": {"icon": "building-fill", "color": "#5B2B82", "label": "CADIS+ (atención e inclusión social)", "icon_svg": "\n  <path d=\"M3 0a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h3v-3.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V16h3a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1zm1 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5M4 5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM7.5 5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5m2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM4.5 8h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5m2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5\"/>\n"}, "Centros Crecer": {"icon": "flower1", "color": "#4F7A12", "label": "Centros Crecer", "icon_svg": "\n  <path d=\"M6.174 1.184a2 2 0 0 1 3.652 0A2 2 0 0 1 12.99 3.01a2 2 0 0 1 1.826 3.164 2 2 0 0 1 0 3.652 2 2 0 0 1-1.826 3.164 2 2 0 0 1-3.164 1.826 2 2 0 0 1-3.652 0A2 2 0 0 1 3.01 12.99a2 2 0 0 1-1.826-3.164 2 2 0 0 1 0-3.652A2 2 0 0 1 3.01 3.01a2 2 0 0 1 3.164-1.826M8 1a1 1 0 0 0-.998 1.03l.01.091q.017.116.054.296c.049.241.122.542.213.887.182.688.428 1.513.676 2.314L8 5.762l.045-.144c.248-.8.494-1.626.676-2.314.091-.345.164-.646.213-.887a5 5 0 0 0 .064-.386L9 2a1 1 0 0 0-1-1M2 9l.03-.002.091-.01a5 5 0 0 0 .296-.054c.241-.049.542-.122.887-.213a61 61 0 0 0 2.314-.676L5.762 8l-.144-.045a61 61 0 0 0-2.314-.676 17 17 0 0 0-.887-.213 5 5 0 0 0-.386-.064L2 7a1 1 0 1 0 0 2m7 5-.002-.03a5 5 0 0 0-.064-.386 16 16 0 0 0-.213-.888 61 61 0 0 0-.676-2.314L8 10.238l-.045.144c-.248.8-.494 1.626-.676 2.314-.091.345-.164.646-.213.887a5 5 0 0 0-.064.386L7 14a1 1 0 1 0 2 0m-5.696-2.134.025-.017a5 5 0 0 0 .303-.248c.184-.164.408-.377.661-.629A61 61 0 0 0 5.96 9.23l.103-.111-.147.033a61 61 0 0 0-2.343.572c-.344.093-.64.18-.874.258a5 5 0 0 0-.367.138l-.027.014a1 1 0 1 0 1 1.732zM4.5 14.062a1 1 0 0 0 1.366-.366l.014-.027q.014-.03.036-.084a5 5 0 0 0 .102-.283c.078-.233.165-.53.258-.874a61 61 0 0 0 .572-2.343l.033-.147-.11.102a61 61 0 0 0-1.743 1.667 17 17 0 0 0-.629.66 5 5 0 0 0-.248.304l-.017.025a1 1 0 0 0 .366 1.366m9.196-8.196a1 1 0 0 0-1-1.732l-.025.017a5 5 0 0 0-.303.248 17 17 0 0 0-.661.629A61 61 0 0 0 10.04 6.77l-.102.111.147-.033a61 61 0 0 0 2.342-.572c.345-.093.642-.18.875-.258a5 5 0 0 0 .367-.138zM11.5 1.938a1 1 0 0 0-1.366.366l-.014.027q-.014.03-.036.084a5 5 0 0 0-.102.283c-.078.233-.165.53-.258.875a61 61 0 0 0-.572 2.342l-.033.147.11-.102a61 61 0 0 0 1.743-1.667c.252-.253.465-.477.629-.66a5 5 0 0 0 .248-.304l.017-.025a1 1 0 0 0-.366-1.366M14 9a1 1 0 0 0 0-2l-.03.002a5 5 0 0 0-.386.064c-.242.049-.543.122-.888.213-.688.182-1.513.428-2.314.676L10.238 8l.144.045c.8.248 1.626.494 2.314.676.345.091.646.164.887.213a5 5 0 0 0 .386.064zM1.938 4.5a1 1 0 0 0 .393 1.38l.084.035q.108.045.283.103c.233.078.53.165.874.258a61 61 0 0 0 2.343.572l.147.033-.103-.111a61 61 0 0 0-1.666-1.742 17 17 0 0 0-.66-.629 5 5 0 0 0-.304-.248l-.025-.017a1 1 0 0 0-1.366.366m2.196-1.196.017.025a5 5 0 0 0 .248.303c.164.184.377.408.629.661A61 61 0 0 0 6.77 5.96l.111.102-.033-.147a61 61 0 0 0-.572-2.342c-.093-.345-.18-.642-.258-.875a5 5 0 0 0-.138-.367l-.014-.027a1 1 0 1 0-1.732 1m9.928 8.196a1 1 0 0 0-.366-1.366l-.027-.014a5 5 0 0 0-.367-.138c-.233-.078-.53-.165-.875-.258a61 61 0 0 0-2.342-.572l-.147-.033.102.111a61 61 0 0 0 1.667 1.742c.253.252.477.465.66.629a5 5 0 0 0 .304.248l.025.017a1 1 0 0 0 1.366-.366m-3.928 2.196a1 1 0 0 0 1.732-1l-.017-.025a5 5 0 0 0-.248-.303 17 17 0 0 0-.629-.661A61 61 0 0 0 9.23 10.04l-.111-.102.033.147a61 61 0 0 0 .572 2.342c.093.345.18.642.258.875a5 5 0 0 0 .138.367zM8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3\"/>\n"}, "Integrarte Interno": {"icon": "house-door-fill", "color": "#E8705B", "label": "Integrarte · atención interna", "icon_svg": "\n  <path d=\"M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5\"/>\n"}, "Integrarte Externo": {"icon": "people-fill", "color": "#B5800A", "label": "Integrarte · atención externa", "icon_svg": "\n  <path d=\"M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5\"/>\n"}, "Otro": {"icon": "geo-alt-fill", "color": "#8A8A8A", "label": "Otro centro", "icon_svg": "\n  <path d=\"M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10m0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6\"/>\n"}};
+const CENTER   = [4.65, -74.1];
+const ZOOM     = 11;
+const USAR_CLUSTER = false;
+
+// ── Marcador: círculo de color + pictograma blanco (pictograma = canal redundante al color) ──
+function makeIcon(cat){
+  const est = ESTILOS[cat] || {icon_svg:'', color:'#8A8A8A'};
+  const big = (cat === 'Equipamiento ancla');
+  const size = big ? 38 : 30;
+  const g = Math.round(size * 0.56);
+  const html = `<span class="pin" style="background:${est.color};width:${size}px;height:${size}px">`
+             + `<svg viewBox="0 0 16 16" fill="#fff" width="${g}" height="${g}">${est.icon_svg}</svg></span>`;
+  return L.divIcon({
+    className: 'marcador',
+    html: html,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2],
+    popupAnchor: [0, -size/2],
+  });
+}
+
+// ── Mapa base ──
+// gestureHandling: un dedo / scroll desliza la página; dos dedos o Ctrl/⌘+rueda mueven el mapa.
+const map = L.map('mapa', {
+  closePopupOnClick: true,
+  gestureHandling: true,
+  gestureHandlingOptions: {
+    text: {
+      touch:     "Use dos dedos para mover el mapa",
+      scroll:    "Use Ctrl + rueda para acercar el mapa",
+      scrollMac: "Use ⌘ + rueda para acercar el mapa"
+    },
+    duration: 1800
+  }
+}).setView(CENTER, ZOOM);
+const TILES_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const TILES_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const tiles = L.tileLayer(TILES_LIGHT, {
+  attribution:'© OpenStreetMap, © CARTO', maxZoom:19
+}).addTo(map);
+
+// Mensajes desde la página contenedora (modo oscuro y "abrir" desde la lista)
+window.addEventListener('message', function(e){
+  if (!e.data) return;
+  if (e.data.type === 'a11y') {
+    const dark = !!e.data.dark;
+    document.body.classList.toggle('oscuro', dark);
+    tiles.setUrl(dark ? TILES_DARK : TILES_LIGHT);
+  }
+  if (e.data.type === 'abrir') {
+    const item = TODOS.find(t => t.props.id === e.data.id);
+    if (!item) return;
+    const m = item.marker;
+    const abrir = () => m.openPopup();
+    if (USAR_CLUSTER && capa.zoomToShowLayer) {
+      capa.zoomToShowLayer(m, abrir);
+    } else {
+      map.setView(m.getLatLng(), Math.max(map.getZoom(), 15));
+      abrir();
+    }
+  }
+});
+
+// ── Botón "Mi ubicación" (geolocalización) ──
+const LocateControl = L.Control.extend({
+  options: { position: 'topleft' },
+  onAdd: function(m){
+    const wrap = L.DomUtil.create('div', 'leaflet-control');
+    const btn = L.DomUtil.create('button', 'btn-ubicacion', wrap);
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Ir a mi ubicación en el mapa');
+    btn.title = 'Ir a mi ubicación';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" '
+      + 'stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">'
+      + '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="4"/>'
+      + '<line x1="12" y1="20" x2="12" y2="23"/><line x1="1" y1="12" x2="4" y2="12"/>'
+      + '<line x1="20" y1="12" x2="23" y2="12"/></svg><span>Mi ubicación</span>';
+    L.DomEvent.disableClickPropagation(wrap);
+    L.DomEvent.on(btn, 'click', function(ev){
+      L.DomEvent.stop(ev);
+      btn.classList.add('cargando');
+      m.locate({ setView: true, maxZoom: 15, enableHighAccuracy: true });
+    });
+    return wrap;
+  }
+});
+map.addControl(new LocateControl());
+
+let ubicMarker = null, ubicCirc = null;
+map.on('locationfound', function(e){
+  if (ubicMarker) map.removeLayer(ubicMarker);
+  if (ubicCirc)   map.removeLayer(ubicCirc);
+  ubicCirc = L.circle(e.latlng, { radius: e.accuracy, color: '#2E5AAC',
+    fillColor: '#2E5AAC', fillOpacity: 0.12, weight: 1 }).addTo(map);
+  ubicMarker = L.marker(e.latlng, {
+    icon: L.divIcon({ className: 'ubic-dot', html: '', iconSize: [18,18], iconAnchor: [9,9] }),
+    title: 'Su ubicación aproximada', alt: 'Su ubicación aproximada', keyboard: true
+  }).addTo(map);
+  ubicMarker.bindPopup('Esta es su ubicación aproximada.').openPopup();
+  const b = document.querySelector('.btn-ubicacion'); if (b) b.classList.remove('cargando');
+});
+map.on('locationerror', function(){
+  const b = document.querySelector('.btn-ubicacion'); if (b) b.classList.remove('cargando');
+  alert('No pudimos obtener su ubicación. Revise que el navegador tenga permiso de ubicación '
+      + 'y que esté usando una conexión segura (https).');
+});
+
+// ── Capa de marcadores (cluster opcional, en paleta) ──
+let capa;
+if(USAR_CLUSTER){
+  capa = L.markerClusterGroup({
+    showCoverageOnHover:false,
+    animate:false,                 // control sensorial: sin animaciones bruscas
+    spiderfyOnMaxZoom:true,
+    maxClusterRadius:50,
+    iconCreateFunction: function(cluster){
+      const n = cluster.getChildCount();
+      const size = n < 10 ? 38 : (n < 100 ? 46 : 56);
+      return L.divIcon({
+        html: `<div class="cl"><span>${n}</span></div>`,
+        className: 'cl-wrap',
+        iconSize: [size, size],
+      });
+    },
+  });
+} else {
+  capa = L.featureGroup();
+}
+map.addLayer(capa);
+
+// ── Crear todos los marcadores una sola vez ──
+const TODOS = FEATURES.map(f => {
+  const m = L.marker([f.lat, f.lng], {
+    icon: makeIcon(f.props.cat),
+    keyboard: true,
+    title: f.props.tooltip || '',
+    alt: f.props.tooltip || '',
+  });
+  m.bindPopup(f.props.popup, {maxWidth:300});
+  m.on('click', function(){
+    try { window.parent.postMessage({ type: 'seleccionado', id: f.props.id }, '*'); } catch (err) {}
+  });
+  return {marker:m, props:f.props};
+});
+
+// ── Lógica de filtrado ──
+const form = document.getElementById('filtros');
+const conteo = document.getElementById('conteo');
+
+function pasaFiltros(p){
+  // selects
+  for(const sel of form.querySelectorAll('select[data-tipo="select"]')){
+    const campo = sel.dataset.campo, val = sel.value;
+    if(val !== '__todos__' && String(p[campo]) !== val) return false;
+  }
+  // checkboxes agrupados (discapacidad, edad…): Y entre grupos, O dentro de cada grupo
+  const grupos = {};
+  form.querySelectorAll('input[data-tipo="disc"]:checked').forEach(c => {
+    (grupos[c.dataset.grupo] = grupos[c.dataset.grupo] || []).push(c.dataset.campo);
+  });
+  for (const g in grupos) {
+    if (!grupos[g].some(d => p[d] === 1)) return false;
+  }
+  // búsqueda de texto
+  const txt = form.querySelector('input[data-tipo="texto"]');
+  if(txt && txt.value.trim()){
+    const q = txt.value.trim().toLowerCase();
+    if(!(p.buscar || '').toLowerCase().includes(q)) return false;
+  }
+  return true;
+}
+
+function aplicar(){
+  capa.clearLayers();
+  let n = 0;
+  for(const t of TODOS){
+    if(pasaFiltros(t.props)){ capa.addLayer(t.marker); n++; }
+  }
+  conteo.textContent = n === 0
+    ? 'No hay servicios que coincidan con los filtros.'
+    : `Mostrando ${n} servicio${n===1?'':'s'}.`;
+}
+
+form.addEventListener('change', aplicar);
+form.querySelector('#f-buscar')?.addEventListener('input', aplicar);
+document.getElementById('limpiar').addEventListener('click', ()=>{
+  form.reset();
+  aplicar();
+  map.setView(CENTER, ZOOM);
+});
+
+aplicar();
+
+// ── Filtros colapsables en móvil ──
+const toggle = document.getElementById('toggle-filtros');
+const colaps = document.getElementById('panel-colapsable');
+toggle.addEventListener('click', () => {
+  const abierto = colaps.classList.toggle('abierto');
+  toggle.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  toggle.firstChild.textContent = abierto ? 'Ocultar filtros ' : 'Mostrar filtros ';
+});
+</script>
+</body>
+</html>

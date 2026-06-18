@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ textos.titulo }}</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a class="skip-link" href="#contenido">Ir al contenido principal</a>
+
+<!-- ── Barra superior ─────────────────────────────────────────────────── -->
+<header id="nav-top">
+  <a class="marca" href="#portada" aria-label="Inicio">
+    {{ picto("heart-fill", "#5B2B82", 38) | safe }}
+    <span class="marca-txt"><strong>Mapa de cuidados y apoyos</strong><span>a personas con discapacidad · Bogotá</span></span>
+  </a>
+  <nav aria-label="Secciones de la página">
+    <a href="#como-usar">Cómo usar</a>
+    <a href="#menu-mapas">Mapas</a>
+    <a href="#contexto">Contexto</a>
+    <a href="#creditos">Créditos</a>
+  </nav>
+  <div class="a11y-wrap">
+    <button id="a11y-btn" aria-expanded="false" aria-controls="a11y-panel" aria-haspopup="true">
+      {{ picto("universal-access-circle", "#5B2B82", 26) | safe }}
+      <span>Accesibilidad</span>
+    </button>
+    <div id="a11y-panel" hidden role="group" aria-label="Opciones de accesibilidad">
+      <fieldset>
+        <legend>Tamaño de texto</legend>
+        <div class="a11y-tamanos" role="group" aria-label="Tamaño de texto">
+          <button type="button" data-text="1" aria-pressed="true">A</button>
+          <button type="button" data-text="2" aria-pressed="false" style="font-size:1.15rem">A+</button>
+          <button type="button" data-text="3" aria-pressed="false" style="font-size:1.3rem">A++</button>
+        </div>
+      </fieldset>
+      <button type="button" class="a11y-toggle" data-toggle="alto-contraste" aria-pressed="false">
+        <span class="a11y-check" aria-hidden="true"></span> Alto contraste
+      </button>
+      <button type="button" class="a11y-toggle" data-toggle="oscuro" aria-pressed="false">
+        <span class="a11y-check" aria-hidden="true"></span> Modo oscuro
+      </button>
+      <button type="button" class="a11y-toggle" data-toggle="sin-motion" aria-pressed="false">
+        <span class="a11y-check" aria-hidden="true"></span> Reducir movimiento
+      </button>
+      <button type="button" class="a11y-toggle" data-toggle="lectura-facil" aria-pressed="false">
+        <span class="a11y-check" aria-hidden="true"></span> Lectura fácil
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="contenido">
+
+  <!-- Momento 1: Portada (hero estilo landing, replicable como Cover en StoryMaps) -->
+  <section id="portada" aria-labelledby="portada-titulo"
+           role="img"
+           aria-label="Ilustración de un parque en Bogotá con personas diversas: una mujer con mochila, una persona joven en silla de ruedas, y una cuidadora caminando de la mano con una niña, frente a los edificios y los cerros de la ciudad.">
+    <div class="hero-texto">
+      <h1 id="portada-titulo">¿Busca servicios para
+        <span class="hl-verde">personas con discapacidad</span>
+        o <span class="hl-morado">para quienes las cuidan</span>
+        en Bogotá?</h1>
+      <p class="subtitulo">{{ textos.subtitulo }}</p>
+      <div class="hero-cta">
+        <a class="btn btn-primario" href="#menu-mapas">Explorar mapas <span aria-hidden="true">→</span></a>
+        <a class="btn btn-secundario" href="#como-usar">Cómo usar <span aria-hidden="true">→</span></a>
+      </div>
+      <ul class="hero-chips">
+        <li>{{ picto("geo-alt-fill", "#5B2B82", 30) | safe }}<span>Información oficial<br>y actualizada</span></li>
+        <li>{{ picto("funnel-fill", "#4F7A12", 30) | safe }}<span>Filtros fáciles<br>de usar</span></li>
+        <li>{{ picto("universal-access-circle", "#2E5AAC", 30) | safe }}<span>Diseñada para<br>ser accesible</span></li>
+      </ul>
+      <p class="autoria">{{ textos.autoria }}</p>
+    </div>
+  </section>
+
+  <!-- Momento 3: Cómo usar -->
+  <section id="como-usar" aria-labelledby="como-usar-titulo">
+    <div class="sec-head">{{ picto("signpost-2-fill", "#4F7A12", 42) | safe }}<h2 id="como-usar-titulo">{{ textos.como_usar.titulo }}</h2></div>
+    <p>{{ textos.como_usar.intro }}</p>
+
+    <!-- Infografía de pasos. El texto (título + descripción) es HTML real que leen
+         los lectores de pantalla; los pictogramas y flechas son decorativos. -->
+    <ol class="infografia" aria-label="Cuatro pasos para usar el mapa">
+      {% for icon, color, titulo, desc in textos.como_usar.pasos %}
+      <li class="paso" style="--c: {{ color }}">
+        <div class="paso-badge">
+          {{ picto_ring(icon, color, 78) | safe }}
+          <span class="paso-num" aria-hidden="true">{{ loop.index }}</span>
+        </div>
+        <h3 class="paso-titulo">{{ titulo }}</h3>
+        <p class="paso-desc">{{ desc }}</p>
+      </li>
+      {% if not loop.last %}
+      <li class="paso-flecha" aria-hidden="true">
+        <svg viewBox="0 0 16 16" width="24" height="24" fill="#B59AD0"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ol>
+
+    <!-- Tarjeta: video en LSC (espacio reservado) -->
+    <div class="tarjeta-video" role="region" aria-label="Video en Lengua de Señas Colombiana">
+      <div class="tv-texto">
+        {{ picto("hand-index", "#5B2B82", 40) | safe }}
+        <div>
+          <h3>{{ textos.como_usar.video_titulo }}</h3>
+          <p>{{ textos.como_usar.video_desc }}</p>
+          <span class="tv-link" aria-hidden="true">Ver video →</span>
+          <p class="tv-nota">{{ textos.como_usar.video_nota }}</p>
+        </div>
+      </div>
+      <div class="tv-thumb" aria-hidden="true">
+        {{ picto("play-circle-fill", "#5B2B82", 56) | safe }}
+      </div>
+    </div>
+
+    <!-- Tarjeta: consejo -->
+    <div class="tarjeta-consejo">
+      {{ picto("lightbulb-fill", "#1F7385", 40) | safe }}
+      <div>
+        <h3>Consejo</h3>
+        <p>{{ textos.como_usar.consejo }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Momento 4: Menú -->
+  <section id="menu-mapas" aria-labelledby="menu-titulo">
+    <div class="sec-head">{{ picto("signpost-split-fill", "#E8705B", 42) | safe }}<h2 id="menu-titulo">{{ textos.menu.titulo }}</h2></div>
+    <p>{{ textos.menu.intro }}</p>
+    <div class="menu-mapas" role="list">
+      {% for m in textos.mapas %}
+      <a class="tarjeta-mapa" href="#{{ m.id }}" role="listitem"
+         style="--c: {{ m.menu_color }}"
+         aria-label="Ir al mapa {{ loop.index }}: {{ m.menu_titulo }}">
+        <div class="tarjeta-cab">
+          {{ picto(m.menu_icon, m.menu_color, 48) | safe }}
+          <div class="numero" aria-hidden="true">Mapa {{ loop.index }}</div>
+        </div>
+        <h3>{{ m.menu_titulo }}</h3>
+        <p class="tarjeta-decision">{{ m.menu_decision }}</p>
+        <span class="tarjeta-ir" aria-hidden="true">Abrir mapa →</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Momentos 5.1–5.4: Mapas -->
+  {% for m in textos.mapas %}
+  <section class="seccion-mapa" id="{{ m.id }}" style="--c: {{ m.menu_color }}" aria-labelledby="{{ m.id }}-titulo">
+    <div class="intro-mapa">
+      <div class="sec-head">
+        {{ picto(m.menu_icon, m.menu_color, 52) | safe }}
+        <div>
+          <span class="mapa-eyebrow">Mapa {{ loop.index }} de 4</span>
+          <h2 id="{{ m.id }}-titulo">{{ m.titulo }}</h2>
+        </div>
+      </div>
+      <p class="intro-normal">{{ m.intro }}</p>
+      <p class="intro-facil">{{ m.intro_facil }}</p>
+    </div>
+
+    <div class="mapa-iframe-wrapper">
+      <iframe src="mapas/{{ m.id }}.html"
+              title="Mapa interactivo: {{ m.titulo }}"
+              aria-label="{{ m.alt }}" loading="lazy"></iframe>
+    </div>
+
+    <div class="tabla-alternativa">
+      <details>
+        <summary>
+          {{ picto("card-list", m.menu_color, 28) | safe }}
+          Ver los servicios como lista
+        </summary>
+        <div class="tabla-scroll">{{ m.tabla_html | safe }}</div>
+      </details>
+    </div>
+
+    <a class="btn-volver" href="#menu-mapas">↑ Volver al menú de mapas</a>
+  </section>
+  {% endfor %}
+
+  <!-- Momento 6: Contexto -->
+  <section id="contexto" aria-labelledby="contexto-titulo">
+    <div class="sec-head">{{ picto("info-circle-fill", "#2E5AAC", 42) | safe }}<h2 id="contexto-titulo">{{ textos.contexto.titulo }}</h2></div>
+
+    <div class="cifras-grid" role="list">
+      {% for c in cifras %}
+      <div class="cifra-card" role="listitem" style="--c: {{ c.color }}">
+        {{ picto(c.icon, c.color, 44) | safe }}
+        <div class="cifra-texto">
+          <div class="numero">{{ c.valor }}</div>
+          <div class="etiqueta">{{ c.etiqueta }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% for titulo, texto in textos.contexto.parrafos %}
+    <h3>{{ titulo }}</h3>
+    <p>{{ texto }}</p>
+    {% endfor %}
+  </section>
+
+  <!-- Momento 7: Créditos y aportes -->
+  <section id="creditos" aria-labelledby="creditos-titulo">
+    <div class="sec-head">{{ picto("chat-left-heart-fill", "#C0392B", 42) | safe }}<h2 id="creditos-titulo">{{ textos.creditos.titulo }}</h2></div>
+    <p>{{ textos.creditos.invitacion }}</p>
+
+    <div class="aporte-placeholders" role="list">
+      {% for icon, color, titulo, desc in textos.creditos.aportes %}
+      <div class="aporte-card" role="listitem" style="--c: {{ color }}">
+        <div class="aporte-cab">{{ picto(icon, color, 40) | safe }}<strong>{{ titulo }}</strong></div>
+        <span>{{ desc }}</span>
+        <span class="aporte-nota">Próximamente: formulario accesible (con alternativa por audio o video).</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <h3>Fuentes y créditos</h3>
+    <p>{{ textos.creditos.fuentes }}</p>
+    <p>{{ textos.creditos.procesamiento }}
+       <a href="{{ repo }}" target="_blank" rel="noopener">
+         Ver repositorio y documentación técnica</a>.</p>
+    <p>{{ textos.creditos.publicacion }}</p>
+    <p class="programa">{{ textos.creditos.programa }}</p>
+
+    <p class="demo-aviso">Versión demostrativa generada con software libre (Python, Leaflet)
+       como anticipo del StoryMap que IDECA publicará en ArcGIS.</p>
+  </section>
+
+</main>
+
+<script>
+  // Resaltar enlace activo en la navegación según la sección visible.
+  const enlaces = document.querySelectorAll('#nav-top nav a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        enlaces.forEach(a => {
+          const activo = a.getAttribute('href') === '#' + e.target.id;
+          a.setAttribute('aria-current', activo ? 'true' : 'false');
+        });
+      }
+    });
+  }, { threshold: 0.4 });
+  document.querySelectorAll('section[id], .seccion-mapa[id]').forEach(s => obs.observe(s));
+
+  // ── Conexión lista ↔ mapa ───────────────────────────────────────────────
+  const animar = () => !(window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                         || document.documentElement.classList.contains('sin-motion'));
+  // Lista → mapa: "Ver en el mapa" abre el punto en el mapa de su sección
+  document.querySelectorAll('.ver-en-mapa').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sec = btn.closest('.seccion-mapa');
+      const iframe = sec.querySelector('iframe');
+      iframe.contentWindow.postMessage({ type: 'abrir', id: parseInt(btn.dataset.id, 10) }, '*');
+      iframe.scrollIntoView({ behavior: animar() ? 'smooth' : 'auto', block: 'center' });
+    });
+  });
+  // Mapa → lista: al tocar un punto, resalta su fila (abre la lista si está cerrada)
+  window.addEventListener('message', e => {
+    if (!e.data || e.data.type !== 'seleccionado') return;
+    const iframe = [...document.querySelectorAll('.seccion-mapa iframe')]
+      .find(f => f.contentWindow === e.source);
+    if (!iframe) return;
+    const sec = iframe.closest('.seccion-mapa');
+    const det = sec.querySelector('.tabla-alternativa details');
+    const row = sec.querySelector('tr[data-id="' + e.data.id + '"]');
+    if (!row) return;
+    // Solo resaltamos la fila; NO abrimos la lista automáticamente.
+    sec.querySelectorAll('tr.resaltada').forEach(r => r.classList.remove('resaltada'));
+    row.classList.add('resaltada');
+    // Si la lista ya está abierta, centramos la fila dentro de ella (sin mover la página)
+    const cont = row.closest('.tabla-scroll');
+    if (det && det.open && cont) {
+      const cr = cont.getBoundingClientRect(), rr = row.getBoundingClientRect();
+      cont.scrollTop += (rr.top - cr.top) - cont.clientHeight / 2 + rr.height / 2;
+    }
+  });
+
+  // ── Barra de accesibilidad ──────────────────────────────────────────────
+  const root = document.documentElement;
+  const LS = window.localStorage;
+
+  function avisarMapas(dark) {
+    document.querySelectorAll('.mapa-iframe-wrapper iframe').forEach(f => {
+      try { f.contentWindow.postMessage({ type: 'a11y', dark: dark }, '*'); } catch (e) {}
+    });
+  }
+
+  // Tamaño de texto
+  function setTexto(n) {
+    root.classList.remove('txt-1', 'txt-2', 'txt-3');
+    root.classList.add('txt-' + n);
+    LS.setItem('a11y-text', n);
+    document.querySelectorAll('.a11y-tamanos button').forEach(b =>
+      b.setAttribute('aria-pressed', b.dataset.text === n ? 'true' : 'false'));
+  }
+  document.querySelectorAll('.a11y-tamanos button').forEach(b =>
+    b.addEventListener('click', () => setTexto(b.dataset.text)));
+
+  // Toggles (alto contraste, oscuro, sin-motion)
+  function setToggle(name, on) {
+    root.classList.toggle(name, on);
+    LS.setItem('a11y-' + name, on ? '1' : '0');
+    const btn = document.querySelector('.a11y-toggle[data-toggle="' + name + '"]');
+    if (btn) btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (name === 'oscuro') avisarMapas(on);
+  }
+  document.querySelectorAll('.a11y-toggle').forEach(b =>
+    b.addEventListener('click', () => setToggle(b.dataset.toggle, !root.classList.contains(b.dataset.toggle))));
+
+  // Restaurar preferencias guardadas
+  setTexto(LS.getItem('a11y-text') || '1');
+  ['alto-contraste', 'oscuro', 'sin-motion', 'lectura-facil'].forEach(n => {
+    if (LS.getItem('a11y-' + n) === '1') setToggle(n, true);
+  });
+  // Reenviar estado oscuro a cada mapa cuando termina de cargar
+  document.querySelectorAll('.mapa-iframe-wrapper iframe').forEach(f =>
+    f.addEventListener('load', () => {
+      try { f.contentWindow.postMessage({ type: 'a11y', dark: root.classList.contains('oscuro') }, '*'); } catch (e) {}
+    }));
+
+  // Abrir/cerrar panel
+  const a11yBtn = document.getElementById('a11y-btn');
+  const a11yPanel = document.getElementById('a11y-panel');
+  a11yBtn.addEventListener('click', () => {
+    const abierto = a11yPanel.hasAttribute('hidden');
+    if (abierto) { a11yPanel.removeAttribute('hidden'); } else { a11yPanel.setAttribute('hidden', ''); }
+    a11yBtn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.a11y-wrap')) { a11yPanel.setAttribute('hidden', ''); a11yBtn.setAttribute('aria-expanded', 'false'); }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !a11yPanel.hasAttribute('hidden')) {
+      a11yPanel.setAttribute('hidden', ''); a11yBtn.setAttribute('aria-expanded', 'false'); a11yBtn.focus();
+    }
+  });
+
+  // ── Interactividad accesible ────────────────────────────────────────────
+  // Hay menos movimiento si lo pide el sistema operativo O el botón de la barra.
+  const motionReducida = () =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+    root.classList.contains('sin-motion');
+
+  const fmt = n => n.toLocaleString('es-CO');
+
+  // Aparición al entrar en pantalla (las transiciones se anulan solas con sin-motion / OS)
+  const sel = '.tarjeta-mapa, .cifra-card, .aporte-card, .paso, .infografia, '
+            + '.seccion-mapa .intro-mapa, .tarjeta-video, .tarjeta-consejo';
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const items = document.querySelectorAll(sel);
+    items.forEach(el => el.classList.add('reveal'));
+    const ro = new IntersectionObserver((entries, o) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); o.unobserve(e.target); }
+      });
+    }, { threshold: 0.15 });
+    items.forEach(el => ro.observe(el));
+  }
+
+  // Conteo de las cifras: anima, salvo que se pida menos movimiento (sistema o botón)
+  const cifras = document.querySelectorAll('.cifra-card .numero');
+  const co = new IntersectionObserver((entries, o) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const el = e.target;
+      const target = parseInt(el.textContent.replace(/\D/g, ''), 10);
+      o.unobserve(el);
+      if (!target) return;
+      if (motionReducida()) { el.textContent = fmt(target); return; }  // sin animación
+      const dur = 1100, t0 = performance.now();
+      const tick = now => {
+        const p = Math.min((now - t0) / dur, 1);
+        const val = Math.floor((1 - Math.pow(1 - p, 3)) * target);
+        el.textContent = fmt(val);
+        if (p < 1) requestAnimationFrame(tick);
+        else el.textContent = fmt(target);
+      };
+      requestAnimationFrame(tick);
+    });
+  }, { threshold: 0.5 });
+  cifras.forEach(el => co.observe(el));
+</script>
+
+</body>
+</html>

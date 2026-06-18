@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ titulo }}</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-gesture-handling@1.2.2/dist/leaflet-gesture-handling.min.css">
+  {% if usar_cluster %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  {% endif %}
+  <style>
+    :root{
+      --morado:#5B2B82; --morado-osc:#43205F; --salmon:#E8705B;
+      --verde:#4F7A12; --borde:#D8CEE0; --texto:#211A28;
+    }
+    *{box-sizing:border-box;}
+    html,body{margin:0;height:100%;font-family:"Segoe UI",Arial,sans-serif;color:var(--texto);}
+    #app{display:flex;height:100vh;width:100%;}
+
+    /* ── Panel de filtros ── */
+    #panel{
+      width:300px;flex-shrink:0;background:#fff;border-right:2px solid var(--borde);
+      overflow-y:auto;padding:1rem 1.1rem;
+    }
+    #panel h2{font-size:1.05rem;color:var(--morado);margin:.2rem 0 .4rem;}
+    .panel-top{display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
+    #toggle-filtros{
+      display:none;background:#fff;border:2px solid var(--morado);color:var(--morado);
+      border-radius:999px;padding:.45rem .9rem;font-size:.85rem;font-weight:700;cursor:pointer;min-height:40px;
+    }
+    .pasos{font-size:.8rem;background:#F6F2F8;border-radius:8px;padding:.6rem .7rem;margin-bottom:1rem;line-height:1.5;}
+    .pasos b{color:var(--morado);}
+    fieldset{border:none;padding:0;margin:0 0 1.1rem;}
+    legend, .campo-label{font-weight:600;font-size:.9rem;display:block;margin-bottom:.35rem;color:var(--texto);}
+    select, input[type="text"]{
+      width:100%;padding:.55rem .6rem;font-size:.92rem;border:2px solid var(--borde);
+      border-radius:8px;background:#fff;color:var(--texto);min-height:44px;
+    }
+    select:focus, input:focus, button:focus{outline:3px solid var(--salmon);outline-offset:2px;}
+    .checks{display:flex;flex-direction:column;gap:.3rem;}
+    .checks label{display:flex;align-items:center;gap:.5rem;font-size:.9rem;font-weight:400;cursor:pointer;min-height:32px;}
+    .checks input{width:20px;height:20px;accent-color:var(--morado);}
+    #limpiar{
+      width:100%;padding:.6rem;background:var(--morado);color:#fff;border:none;border-radius:8px;
+      font-size:.92rem;font-weight:600;cursor:pointer;min-height:44px;margin-top:.3rem;
+    }
+    #limpiar:hover{background:var(--morado-osc);}
+    #conteo{font-size:.9rem;font-weight:600;color:var(--morado);margin:.2rem 0 1rem;}
+
+    /* ── Leyenda ── */
+    .leyenda{margin-top:1rem;border-top:1px solid var(--borde);padding-top:.8rem;}
+    .leyenda h3{font-size:.9rem;margin:0 0 .5rem;color:var(--texto);}
+    .leyenda .item{display:flex;align-items:center;gap:.5rem;font-size:.83rem;margin-bottom:.4rem;line-height:1.3;}
+    .leyenda svg{flex-shrink:0;}
+
+    /* ── Mapa ── */
+    #mapa{flex:1;height:100%;}
+    .leaflet-popup-content{font-size:.86rem;line-height:1.5;}
+    .leaflet-popup-content b{color:var(--morado);}
+    .leaflet-popup-content a{color:var(--morado);font-weight:600;}
+
+    /* cluster en paleta (morado con anillo verde manzana) */
+    .cl-wrap{background:transparent !important;}
+    .cl{
+      display:flex;align-items:center;justify-content:center;width:100%;height:100%;
+      background:#5B2B82;color:#fff;border:3px solid #8DC63F;border-radius:50%;
+      font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.4);
+    }
+    .cl span{font-size:.95rem;line-height:1;}
+
+    /* marcador / leyenda: badge circular con pictograma */
+    .pin{
+      display:inline-flex;align-items:center;justify-content:center;
+      border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.45);
+      box-sizing:border-box;
+    }
+    .marcador .pin{cursor:pointer;}
+
+    /* Botón "Mi ubicación" */
+    .btn-ubicacion{
+      display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;
+      background:#fff;color:#2E5AAC;border:2px solid #2E5AAC;border-radius:8px;
+      padding:.45rem .7rem;font-size:.85rem;font-weight:700;min-height:40px;
+      box-shadow:0 1px 4px rgba(0,0,0,.3);font-family:inherit;
+    }
+    .btn-ubicacion:hover,.btn-ubicacion:focus-visible{background:#eaf0fb;outline:3px solid #2E5AAC;outline-offset:2px;}
+    .btn-ubicacion.cargando{opacity:.6;}
+    .ubic-dot{
+      background:#2E5AAC;border:3px solid #fff;border-radius:50%;
+      box-shadow:0 0 0 3px rgba(46,90,172,.35);
+    }
+    body.oscuro .btn-ubicacion{background:#221a30;color:#9bc0ff;border-color:#9bc0ff;}
+
+    /* ── Responsive: panel arriba y filtros colapsables en móvil ── */
+    @media (max-width:680px){
+      #app{flex-direction:column;height:auto;}
+      #panel{width:100%;border-right:none;border-bottom:2px solid var(--borde);max-height:none;}
+      #mapa{height:60vh;min-height:340px;}
+      #toggle-filtros{display:inline-flex;align-items:center;gap:.3rem;}
+      #panel-colapsable{display:none;}
+      #panel-colapsable.abierto{display:block;}
+    }
+    /* Control sensorial: respetar reduce-motion */
+    @media (prefers-reduced-motion: reduce){
+      *{animation:none !important;transition:none !important;}
+    }
+    /* ── Modo oscuro (sincronizado con la página) ── */
+    body.oscuro{background:#1a1426;color:#ece8f0;}
+    body.oscuro #panel{background:#221a30;border-color:#3a3048;}
+    body.oscuro #panel h2,
+    body.oscuro #conteo{color:#c9a9e6;}
+    body.oscuro .pasos{background:#2c2240;color:#ece8f0;}
+    body.oscuro .pasos b{color:#c9a9e6;}
+    body.oscuro legend, body.oscuro .campo-label,
+    body.oscuro .checks label, body.oscuro .leyenda .item{color:#ece8f0;}
+    body.oscuro select, body.oscuro input[type="text"]{
+      background:#1a1426;color:#ece8f0;border-color:#4a3d5c;
+    }
+    body.oscuro .leyenda{border-top-color:#3a3048;}
+    body.oscuro #toggle-filtros{background:#221a30;color:#c9a9e6;border-color:#c9a9e6;}
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Panel de filtros accesible -->
+  <aside id="panel" aria-label="Filtros del mapa">
+    <div class="panel-top">
+      <h2>Filtrar</h2>
+      <button type="button" id="toggle-filtros" aria-expanded="false" aria-controls="panel-colapsable">
+        Mostrar filtros <span aria-hidden="true">▾</span>
+      </button>
+    </div>
+    <p id="conteo" role="status" aria-live="polite"></p>
+    <div id="panel-colapsable">
+    <div class="pasos">
+      <b>1.</b> Elija filtros &nbsp; <b>2.</b> Toque un punto &nbsp; <b>3.</b> Lea la información
+    </div>
+
+    <form id="filtros" aria-label="Controles de filtro">
+      {% for f in filtros %}
+        {% if f.tipo == "select" %}
+        <fieldset>
+          <label class="campo-label" for="f-{{ f.campo }}">{{ f.etiqueta }}</label>
+          <select id="f-{{ f.campo }}" data-campo="{{ f.campo }}" data-tipo="select">
+            <option value="__todos__">Todos</option>
+            {% for opt in f.opciones %}
+            <option value="{{ opt }}">{{ opt }}</option>
+            {% endfor %}
+          </select>
+        </fieldset>
+        {% elif f.tipo == "checkbox-disc" %}
+        <fieldset>
+          <legend>{{ f.etiqueta }}</legend>
+          <div class="checks">
+            {% for campo, etq in f.opciones %}
+            <label><input type="checkbox" data-tipo="disc" data-grupo="{{ f.campo }}" data-campo="{{ campo }}"> {{ etq }}</label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        {% elif f.tipo == "texto" %}
+        <fieldset>
+          <label class="campo-label" for="f-buscar">{{ f.etiqueta }}</label>
+          <input type="text" id="f-buscar" data-tipo="texto" placeholder="Escriba aquí…"
+                 autocomplete="off">
+        </fieldset>
+        {% endif %}
+      {% endfor %}
+      <button type="button" id="limpiar">Limpiar filtros</button>
+    </form>
+
+    <div class="leyenda">
+      <h3>Convenciones</h3>
+      {% for cat, est in estilos.items() %}
+      <div class="item">{{ svg_leyenda(est) | safe }} <span>{{ est.label }}</span></div>
+      {% endfor %}
+    </div>
+    </div><!-- /panel-colapsable -->
+  </aside>
+
+  <!-- Mapa -->
+  <div id="mapa" role="application" aria-label="{{ alt }}"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet-gesture-handling@1.2.2/dist/leaflet-gesture-handling.min.js"></script>
+{% if usar_cluster %}
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+{% endif %}
+<script>
+// ── Datos y configuración inyectados desde Python ──
+const FEATURES = {{ features_json | safe }};
+const ESTILOS  = {{ estilos_json | safe }};
+const CENTER   = [{{ center_lat }}, {{ center_lon }}];
+const ZOOM     = {{ zoom }};
+const USAR_CLUSTER = {{ 'true' if usar_cluster else 'false' }};
+
+// ── Marcador: círculo de color + pictograma blanco (pictograma = canal redundante al color) ──
+function makeIcon(cat){
+  const est = ESTILOS[cat] || {icon_svg:'', color:'#8A8A8A'};
+  const big = (cat === 'Equipamiento ancla');
+  const size = big ? 38 : 30;
+  const g = Math.round(size * 0.56);
+  const html = `<span class="pin" style="background:${est.color};width:${size}px;height:${size}px">`
+             + `<svg viewBox="0 0 16 16" fill="#fff" width="${g}" height="${g}">${est.icon_svg}</svg></span>`;
+  return L.divIcon({
+    className: 'marcador',
+    html: html,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2],
+    popupAnchor: [0, -size/2],
+  });
+}
+
+// ── Mapa base ──
+// gestureHandling: un dedo / scroll desliza la página; dos dedos o Ctrl/⌘+rueda mueven el mapa.
+const map = L.map('mapa', {
+  closePopupOnClick: true,
+  gestureHandling: true,
+  gestureHandlingOptions: {
+    text: {
+      touch:     "Use dos dedos para mover el mapa",
+      scroll:    "Use Ctrl + rueda para acercar el mapa",
+      scrollMac: "Use ⌘ + rueda para acercar el mapa"
+    },
+    duration: 1800
+  }
+}).setView(CENTER, ZOOM);
+const TILES_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+const TILES_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const tiles = L.tileLayer(TILES_LIGHT, {
+  attribution:'© OpenStreetMap, © CARTO', maxZoom:19
+}).addTo(map);
+
+// Mensajes desde la página contenedora (modo oscuro y "abrir" desde la lista)
+window.addEventListener('message', function(e){
+  if (!e.data) return;
+  if (e.data.type === 'a11y') {
+    const dark = !!e.data.dark;
+    document.body.classList.toggle('oscuro', dark);
+    tiles.setUrl(dark ? TILES_DARK : TILES_LIGHT);
+  }
+  if (e.data.type === 'abrir') {
+    const item = TODOS.find(t => t.props.id === e.data.id);
+    if (!item) return;
+    const m = item.marker;
+    const abrir = () => m.openPopup();
+    if (USAR_CLUSTER && capa.zoomToShowLayer) {
+      capa.zoomToShowLayer(m, abrir);
+    } else {
+      map.setView(m.getLatLng(), Math.max(map.getZoom(), 15));
+      abrir();
+    }
+  }
+});
+
+// ── Botón "Mi ubicación" (geolocalización) ──
+const LocateControl = L.Control.extend({
+  options: { position: 'topleft' },
+  onAdd: function(m){
+    const wrap = L.DomUtil.create('div', 'leaflet-control');
+    const btn = L.DomUtil.create('button', 'btn-ubicacion', wrap);
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Ir a mi ubicación en el mapa');
+    btn.title = 'Ir a mi ubicación';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" '
+      + 'stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">'
+      + '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="4"/>'
+      + '<line x1="12" y1="20" x2="12" y2="23"/><line x1="1" y1="12" x2="4" y2="12"/>'
+      + '<line x1="20" y1="12" x2="23" y2="12"/></svg><span>Mi ubicación</span>';
+    L.DomEvent.disableClickPropagation(wrap);
+    L.DomEvent.on(btn, 'click', function(ev){
+      L.DomEvent.stop(ev);
+      btn.classList.add('cargando');
+      m.locate({ setView: true, maxZoom: 15, enableHighAccuracy: true });
+    });
+    return wrap;
+  }
+});
+map.addControl(new LocateControl());
+
+let ubicMarker = null, ubicCirc = null;
+map.on('locationfound', function(e){
+  if (ubicMarker) map.removeLayer(ubicMarker);
+  if (ubicCirc)   map.removeLayer(ubicCirc);
+  ubicCirc = L.circle(e.latlng, { radius: e.accuracy, color: '#2E5AAC',
+    fillColor: '#2E5AAC', fillOpacity: 0.12, weight: 1 }).addTo(map);
+  ubicMarker = L.marker(e.latlng, {
+    icon: L.divIcon({ className: 'ubic-dot', html: '', iconSize: [18,18], iconAnchor: [9,9] }),
+    title: 'Su ubicación aproximada', alt: 'Su ubicación aproximada', keyboard: true
+  }).addTo(map);
+  ubicMarker.bindPopup('Esta es su ubicación aproximada.').openPopup();
+  const b = document.querySelector('.btn-ubicacion'); if (b) b.classList.remove('cargando');
+});
+map.on('locationerror', function(){
+  const b = document.querySelector('.btn-ubicacion'); if (b) b.classList.remove('cargando');
+  alert('No pudimos obtener su ubicación. Revise que el navegador tenga permiso de ubicación '
+      + 'y que esté usando una conexión segura (https).');
+});
+
+// ── Capa de marcadores (cluster opcional, en paleta) ──
+let capa;
+if(USAR_CLUSTER){
+  capa = L.markerClusterGroup({
+    showCoverageOnHover:false,
+    animate:false,                 // control sensorial: sin animaciones bruscas
+    spiderfyOnMaxZoom:true,
+    maxClusterRadius:50,
+    iconCreateFunction: function(cluster){
+      const n = cluster.getChildCount();
+      const size = n < 10 ? 38 : (n < 100 ? 46 : 56);
+      return L.divIcon({
+        html: `<div class="cl"><span>${n}</span></div>`,
+        className: 'cl-wrap',
+        iconSize: [size, size],
+      });
+    },
+  });
+} else {
+  capa = L.featureGroup();
+}
+map.addLayer(capa);
+
+// ── Crear todos los marcadores una sola vez ──
+const TODOS = FEATURES.map(f => {
+  const m = L.marker([f.lat, f.lng], {
+    icon: makeIcon(f.props.cat),
+    keyboard: true,
+    title: f.props.tooltip || '',
+    alt: f.props.tooltip || '',
+  });
+  m.bindPopup(f.props.popup, {maxWidth:300});
+  m.on('click', function(){
+    try { window.parent.postMessage({ type: 'seleccionado', id: f.props.id }, '*'); } catch (err) {}
+  });
+  return {marker:m, props:f.props};
+});
+
+// ── Lógica de filtrado ──
+const form = document.getElementById('filtros');
+const conteo = document.getElementById('conteo');
+
+function pasaFiltros(p){
+  // selects
+  for(const sel of form.querySelectorAll('select[data-tipo="select"]')){
+    const campo = sel.dataset.campo, val = sel.value;
+    if(val !== '__todos__' && String(p[campo]) !== val) return false;
+  }
+  // checkboxes agrupados (discapacidad, edad…): Y entre grupos, O dentro de cada grupo
+  const grupos = {};
+  form.querySelectorAll('input[data-tipo="disc"]:checked').forEach(c => {
+    (grupos[c.dataset.grupo] = grupos[c.dataset.grupo] || []).push(c.dataset.campo);
+  });
+  for (const g in grupos) {
+    if (!grupos[g].some(d => p[d] === 1)) return false;
+  }
+  // búsqueda de texto
+  const txt = form.querySelector('input[data-tipo="texto"]');
+  if(txt && txt.value.trim()){
+    const q = txt.value.trim().toLowerCase();
+    if(!(p.buscar || '').toLowerCase().includes(q)) return false;
+  }
+  return true;
+}
+
+function aplicar(){
+  capa.clearLayers();
+  let n = 0;
+  for(const t of TODOS){
+    if(pasaFiltros(t.props)){ capa.addLayer(t.marker); n++; }
+  }
+  conteo.textContent = n === 0
+    ? 'No hay servicios que coincidan con los filtros.'
+    : `Mostrando ${n} servicio${n===1?'':'s'}.`;
+}
+
+form.addEventListener('change', aplicar);
+form.querySelector('#f-buscar')?.addEventListener('input', aplicar);
+document.getElementById('limpiar').addEventListener('click', ()=>{
+  form.reset();
+  aplicar();
+  map.setView(CENTER, ZOOM);
+});
+
+aplicar();
+
+// ── Filtros colapsables en móvil ──
+const toggle = document.getElementById('toggle-filtros');
+const colaps = document.getElementById('panel-colapsable');
+toggle.addEventListener('click', () => {
+  const abierto = colaps.classList.toggle('abierto');
+  toggle.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  toggle.firstChild.textContent = abierto ? 'Ocultar filtros ' : 'Mostrar filtros ';
+});
+</script>
+</body>
+</html>
