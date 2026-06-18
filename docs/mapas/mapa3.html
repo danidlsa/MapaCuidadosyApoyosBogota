@@ -55,9 +55,10 @@
 
     /* ── Mapa ── */
     #mapa{flex:1;height:100%;}
-    .leaflet-popup-content{font-size:.86rem;line-height:1.5;}
+    .leaflet-popup-content{font-size:.86rem;line-height:1.5;max-height:50vh;overflow-y:auto;}
     .leaflet-popup-content b{color:var(--morado);}
     .leaflet-popup-content a{color:var(--morado);font-weight:600;}
+    @media (max-width:680px){ .leaflet-popup-content{max-height:38vh;} }
 
     /* cluster en paleta (morado con anillo verde manzana) */
     .cl-wrap{background:transparent !important;}
@@ -133,9 +134,6 @@
     </div>
     <p id="conteo" role="status" aria-live="polite"></p>
     <div id="panel-colapsable">
-    <div class="pasos">
-      <b>1.</b> Elija filtros &nbsp; <b>2.</b> Toque un punto &nbsp; <b>3.</b> Lea la información
-    </div>
 
     <form id="filtros" aria-label="Controles de filtro">
       

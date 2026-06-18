@@ -102,8 +102,7 @@ DISC_LABELS = {
 # ── Textos narrativos (tomados del docx, español de Colombia, forma "usted") ──
 TEXTOS = {
     "titulo":    "Mapa de cuidados y apoyos a personas con discapacidad en Bogotá",
-    "subtitulo": "Explore la oferta pública de servicios cerca de usted y "
-                 "encuentre lo que necesita.",
+    "subtitulo": "Explore la oferta pública de servicios cerca de usted.",
     "autoria":   "PNUD · IDECA · Alcaldía Mayor de Bogotá",
 
     "bienvenida": [
@@ -113,7 +112,7 @@ TEXTOS = {
     ],
 
     "como_usar": {
-        "titulo": "Cómo usar este mapa",
+        "titulo": "Cómo usar este sitio",
         "intro":  "Explore y encuentre los servicios que necesita en cuatro pasos:",
         "pasos": [
             ("map-fill",        "#5B2B82", "Elija un mapa",          "Seleccione uno de los cuatro mapas disponibles."),
@@ -139,7 +138,7 @@ TEXTOS = {
             "id": "mapa1",
             "capa": "Cuidados_SDIS",
             "menu_icon": "building-fill", "menu_color": "#5B2B82",
-            "menu_decision": "Si busca atención, orientación o acompañamiento.",
+            "menu_decision": "Si busca atención especializada, servicios de cuidado, apoyo y acompañamiento.",
             "menu_titulo": "Centros de atención directa",
             "menu_desc": "Centros públicos donde personas con discapacidad reciben "
                          "atención, formación y acompañamiento: CADIS, Crecer, "
@@ -148,9 +147,8 @@ TEXTOS = {
             "titulo": "Centros distritales de atención directa",
             "intro":  "La Secretaría Distrital de Integración Social cuenta en Bogotá "
                       "con una red de centros donde las personas con discapacidad "
-                      "reciben atención y apoyo cotidiano. Cada centro atiende edades "
-                      "y tipos de discapacidad distintos. Ingrese al mapa, acérquese a "
-                      "su localidad y filtre por lo que necesita.",
+                      "reciben atención y apoyo cotidiano. Cada centro atiende distintas "
+                      "edades y tipos de discapacidad.",
             "intro_facil": "Lugares para recibir atención y apoyo.",
             "alt": "Mapa de Bogotá con la ubicación de los centros de atención directa "
                    "de la Secretaría Distrital de Integración Social. Cada forma "
@@ -184,7 +182,7 @@ TEXTOS = {
             "id": "mapa3",
             "capa": "Oferta_discapacidad",
             "menu_icon": "grid-3x3-gap-fill", "menu_color": "#E8705B",
-            "menu_decision": "Si quiere explorar actividades y otros servicios.",
+            "menu_decision": "Si quiere explorar actividades culturales y otros servicios.",
             "menu_titulo": "Otra oferta para personas con discapacidad",
             "menu_desc": "Talleres, programas culturales, deporte adaptado, asesorías "
                          "y otros servicios que ofrecen distintas entidades del "
@@ -195,8 +193,7 @@ TEXTOS = {
                       "vista: talleres culturales, deporte adaptado, asesorías "
                       "jurídicas, programas de salud, espacios comunitarios. Esta "
                       "sección reúne servicios distritales que no aparecen en los "
-                      "mapas anteriores. Filtre por tema o tipo de discapacidad "
-                      "atendida para identificar lo que se ajusta a su búsqueda.",
+                      "mapas anteriores.",
             "intro_facil": "Otras actividades y servicios en la ciudad.",
             "alt": "Mapa de Bogotá con servicios de distintas entidades del Distrito "
                    "para personas con discapacidad, agrupados por temática. Cada "

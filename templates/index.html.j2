@@ -80,11 +80,10 @@
   <!-- Momento 3: Cómo usar -->
   <section id="como-usar" aria-labelledby="como-usar-titulo">
     <div class="sec-head">{{ picto("signpost-2-fill", "#4F7A12", 42) | safe }}<h2 id="como-usar-titulo">{{ textos.como_usar.titulo }}</h2></div>
-    <p>{{ textos.como_usar.intro }}</p>
 
     <!-- Infografía de pasos. El texto (título + descripción) es HTML real que leen
          los lectores de pantalla; los pictogramas y flechas son decorativos. -->
-    <ol class="infografia" aria-label="Cuatro pasos para usar el mapa">
+    <ol class="infografia" aria-label="Cuatro pasos para usar el sitio">
       {% for icon, color, titulo, desc in textos.como_usar.pasos %}
       <li class="paso" style="--c: {{ color }}">
         <div class="paso-badge">
@@ -115,15 +114,6 @@
       </div>
       <div class="tv-thumb" aria-hidden="true">
         {{ picto("play-circle-fill", "#5B2B82", 56) | safe }}
-      </div>
-    </div>
-
-    <!-- Tarjeta: consejo -->
-    <div class="tarjeta-consejo">
-      {{ picto("lightbulb-fill", "#1F7385", 40) | safe }}
-      <div>
-        <h3>Consejo</h3>
-        <p>{{ textos.como_usar.consejo }}</p>
       </div>
     </div>
   </section>
@@ -353,7 +343,7 @@
 
   // Aparición al entrar en pantalla (las transiciones se anulan solas con sin-motion / OS)
   const sel = '.tarjeta-mapa, .cifra-card, .aporte-card, .paso, .infografia, '
-            + '.seccion-mapa .intro-mapa, .tarjeta-video, .tarjeta-consejo';
+            + '.seccion-mapa .intro-mapa, .tarjeta-video';
   if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     const items = document.querySelectorAll(sel);
     items.forEach(el => el.classList.add('reveal'));
