@@ -28,6 +28,10 @@
       <span>Accesibilidad</span>
     </button>
     <div id="a11y-panel" hidden role="group" aria-label="Opciones de accesibilidad">
+      <div class="a11y-head">
+        <strong>Accesibilidad</strong>
+        <button type="button" id="a11y-cerrar" aria-label="Cerrar opciones de accesibilidad">✕</button>
+      </div>
       <fieldset>
         <legend>Tamaño de texto</legend>
         <div class="a11y-tamanos" role="group" aria-label="Tamaño de texto">
@@ -157,7 +161,8 @@
     <div class="mapa-iframe-wrapper">
       <iframe src="mapas/{{ m.id }}.html"
               title="Mapa interactivo: {{ m.titulo }}"
-              aria-label="{{ m.alt }}" loading="lazy"></iframe>
+              aria-label="{{ m.alt }}" loading="lazy"
+              allowfullscreen allow="fullscreen"></iframe>
     </div>
 
     <div class="tabla-alternativa">
@@ -323,6 +328,11 @@
     const abierto = a11yPanel.hasAttribute('hidden');
     if (abierto) { a11yPanel.removeAttribute('hidden'); } else { a11yPanel.setAttribute('hidden', ''); }
     a11yBtn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  });
+  document.getElementById('a11y-cerrar').addEventListener('click', () => {
+    a11yPanel.setAttribute('hidden', '');
+    a11yBtn.setAttribute('aria-expanded', 'false');
+    a11yBtn.focus();
   });
   document.addEventListener('click', e => {
     if (!e.target.closest('.a11y-wrap')) { a11yPanel.setAttribute('hidden', ''); a11yBtn.setAttribute('aria-expanded', 'false'); }

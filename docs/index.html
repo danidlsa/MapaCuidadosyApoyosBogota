@@ -33,6 +33,10 @@
       <span>Accesibilidad</span>
     </button>
     <div id="a11y-panel" hidden role="group" aria-label="Opciones de accesibilidad">
+      <div class="a11y-head">
+        <strong>Accesibilidad</strong>
+        <button type="button" id="a11y-cerrar" aria-label="Cerrar opciones de accesibilidad">✕</button>
+      </div>
       <fieldset>
         <legend>Tamaño de texto</legend>
         <div class="a11y-tamanos" role="group" aria-label="Tamaño de texto">
@@ -264,14 +268,15 @@
           <h2 id="mapa1-titulo">Centros distritales de atención directa</h2>
         </div>
       </div>
-      <p class="intro-normal">La Secretaría Distrital de Integración Social cuenta en Bogotá con una red de centros donde las personas con discapacidad reciben atención y apoyo cotidiano. Cada centro atiende distintas edades y tipos de discapacidad.</p>
+      <p class="intro-normal">Red de centros de la Secretaría Distrital de Integración Social donde las personas con discapacidad reciben atención y apoyo, según su edad y tipo de discapacidad.</p>
       <p class="intro-facil">Lugares para recibir atención y apoyo.</p>
     </div>
 
     <div class="mapa-iframe-wrapper">
       <iframe src="mapas/mapa1.html"
               title="Mapa interactivo: Centros distritales de atención directa"
-              aria-label="Mapa de Bogotá con la ubicación de los centros de atención directa de la Secretaría Distrital de Integración Social. Cada forma representa un tipo de centro: CADIS, Crecer e Integrarte." loading="lazy"></iframe>
+              aria-label="Mapa de Bogotá con la ubicación de los centros de atención directa de la Secretaría Distrital de Integración Social. Cada forma representa un tipo de centro: CADIS, Crecer e Integrarte." loading="lazy"
+              allowfullscreen allow="fullscreen"></iframe>
     </div>
 
     <div class="tabla-alternativa">
@@ -302,14 +307,15 @@
           <h2 id="mapa2-titulo">Educación inclusiva</h2>
         </div>
       </div>
-      <p class="intro-normal">Este mapa muestra qué colegios oficiales y no oficiales de Bogotá tienen actualmente matrícula de estudiantes con discapacidad, y qué tipos de discapacidad atienden. No constituye una garantía de cupo, pero sí ofrece una primera orientación sobre dónde acercarse a consultar.</p>
+      <p class="intro-normal">Colegios de Bogotá que reciben estudiantes con discapacidad y los tipos que atienden. Es una primera orientación, no garantiza cupo.</p>
       <p class="intro-facil">Colegios que reciben estudiantes con discapacidad.</p>
     </div>
 
     <div class="mapa-iframe-wrapper">
       <iframe src="mapas/mapa2.html"
               title="Mapa interactivo: Educación inclusiva"
-              aria-label="Mapa de Bogotá con los colegios que reportan estudiantes con discapacidad. Los círculos son colegios oficiales y los triángulos no oficiales; en gris, los que no reportan estudiantes con discapacidad." loading="lazy"></iframe>
+              aria-label="Mapa de Bogotá con los colegios que reportan estudiantes con discapacidad. Los círculos son colegios oficiales y los triángulos no oficiales; en gris, los que no reportan estudiantes con discapacidad." loading="lazy"
+              allowfullscreen allow="fullscreen"></iframe>
     </div>
 
     <div class="tabla-alternativa">
@@ -339,14 +345,15 @@
           <h2 id="mapa3-titulo">Más allá de cuidados y educación</h2>
         </div>
       </div>
-      <p class="intro-normal">Bogotá ofrece mucha más oferta de la que se aprecia a primera vista: talleres culturales, deporte adaptado, asesorías jurídicas, programas de salud, espacios comunitarios. Esta sección reúne servicios distritales que no aparecen en los mapas anteriores.</p>
+      <p class="intro-normal">Bogotá ofrece mucha más oferta de la que se aprecia a primera vista: talleres culturales, deporte adaptado, asesorías jurídicas, programas de salud y espacios comunitarios que no aparecen en los otros mapas.</p>
       <p class="intro-facil">Otras actividades y servicios en la ciudad.</p>
     </div>
 
     <div class="mapa-iframe-wrapper">
       <iframe src="mapas/mapa3.html"
               title="Mapa interactivo: Más allá de cuidados y educación"
-              aria-label="Mapa de Bogotá con servicios de distintas entidades del Distrito para personas con discapacidad, agrupados por temática. Cada temática tiene una forma y un color distintos." loading="lazy"></iframe>
+              aria-label="Mapa de Bogotá con servicios de distintas entidades del Distrito para personas con discapacidad, agrupados por temática. Cada temática tiene una forma y un color distintos." loading="lazy"
+              allowfullscreen allow="fullscreen"></iframe>
     </div>
 
     <div class="tabla-alternativa">
@@ -378,14 +385,15 @@ Estación Mirador del Paraíso.  TransMiCable</td><td>Instituto Distrital de Pat
           <h2 id="mapa4-titulo">Cuidar a quien cuida</h2>
         </div>
       </div>
-      <p class="intro-normal">Las Manzanas del Cuidado son espacios donde todas las personas cuidadoras pueden acceder a formación, asesoría jurídica, atención psicosocial, actividades culturales y tiempo para sí mismas, mientras servicios complementarios atienden a las personas a su cargo.</p>
+      <p class="intro-normal">Las Manzanas del Cuidado ofrecen a las personas cuidadoras formación, asesoría jurídica, atención psicosocial, actividades culturales y tiempo para sí mismas.</p>
       <p class="intro-facil">Apoyo para las personas que cuidan.</p>
     </div>
 
     <div class="mapa-iframe-wrapper">
       <iframe src="mapas/mapa4.html"
               title="Mapa interactivo: Cuidar a quien cuida"
-              aria-label="Mapa de Bogotá con los servicios de las Manzanas del Cuidado dirigidos a personas cuidadoras, sus familias y la comunidad, y los equipamientos ancla. Los servicios se agrupan por cercanía; toque un grupo para separarlos." loading="lazy"></iframe>
+              aria-label="Mapa de Bogotá con los servicios de las Manzanas del Cuidado dirigidos a personas cuidadoras, sus familias y la comunidad, y los equipamientos ancla. Los servicios se agrupan por cercanía; toque un grupo para separarlos." loading="lazy"
+              allowfullscreen allow="fullscreen"></iframe>
     </div>
 
     <div class="tabla-alternativa">
@@ -640,6 +648,11 @@ Estación Mirador del Paraíso.  TransMiCable</td><td>Instituto Distrital de Pat
     const abierto = a11yPanel.hasAttribute('hidden');
     if (abierto) { a11yPanel.removeAttribute('hidden'); } else { a11yPanel.setAttribute('hidden', ''); }
     a11yBtn.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  });
+  document.getElementById('a11y-cerrar').addEventListener('click', () => {
+    a11yPanel.setAttribute('hidden', '');
+    a11yBtn.setAttribute('aria-expanded', 'false');
+    a11yBtn.focus();
   });
   document.addEventListener('click', e => {
     if (!e.target.closest('.a11y-wrap')) { a11yPanel.setAttribute('hidden', ''); a11yBtn.setAttribute('aria-expanded', 'false'); }

@@ -145,10 +145,9 @@ TEXTOS = {
                          "Renacer e Integrarte. Si está buscando un lugar al que "
                          "asistir o donde solicitar orientación, comience por aquí.",
             "titulo": "Centros distritales de atención directa",
-            "intro":  "La Secretaría Distrital de Integración Social cuenta en Bogotá "
-                      "con una red de centros donde las personas con discapacidad "
-                      "reciben atención y apoyo cotidiano. Cada centro atiende distintas "
-                      "edades y tipos de discapacidad.",
+            "intro":  "Red de centros de la Secretaría Distrital de Integración Social "
+                      "donde las personas con discapacidad reciben atención y apoyo, "
+                      "según su edad y tipo de discapacidad.",
             "intro_facil": "Lugares para recibir atención y apoyo.",
             "alt": "Mapa de Bogotá con la ubicación de los centros de atención directa "
                    "de la Secretaría Distrital de Integración Social. Cada forma "
@@ -167,11 +166,8 @@ TEXTOS = {
                          "quien acompaña o cuida, este mapa muestra el tipo de "
                          "discapacidades atendidas en los colegios actualmente.",
             "titulo": "Educación inclusiva",
-            "intro":  "Este mapa muestra qué colegios oficiales y no oficiales de "
-                      "Bogotá tienen actualmente matrícula de estudiantes con "
-                      "discapacidad, y qué tipos de discapacidad atienden. No "
-                      "constituye una garantía de cupo, pero sí ofrece una primera "
-                      "orientación sobre dónde acercarse a consultar.",
+            "intro":  "Colegios de Bogotá que reciben estudiantes con discapacidad y los "
+                      "tipos que atienden. Es una primera orientación, no garantiza cupo.",
             "intro_facil": "Colegios que reciben estudiantes con discapacidad.",
             "alt": "Mapa de Bogotá con los colegios que reportan estudiantes con "
                    "discapacidad. Los círculos son colegios oficiales y los triángulos "
@@ -191,9 +187,8 @@ TEXTOS = {
             "titulo": "Más allá de cuidados y educación",
             "intro":  "Bogotá ofrece mucha más oferta de la que se aprecia a primera "
                       "vista: talleres culturales, deporte adaptado, asesorías "
-                      "jurídicas, programas de salud, espacios comunitarios. Esta "
-                      "sección reúne servicios distritales que no aparecen en los "
-                      "mapas anteriores.",
+                      "jurídicas, programas de salud y espacios comunitarios que no "
+                      "aparecen en los otros mapas.",
             "intro_facil": "Otras actividades y servicios en la ciudad.",
             "alt": "Mapa de Bogotá con servicios de distintas entidades del Distrito "
                    "para personas con discapacidad, agrupados por temática. Cada "
@@ -212,11 +207,9 @@ TEXTOS = {
                          "formación, descanso, asesoría jurídica, atención "
                          "psicosocial, actividades culturales.",
             "titulo": "Cuidar a quien cuida",
-            "intro":  "Las Manzanas del Cuidado son espacios donde todas las personas "
-                      "cuidadoras pueden acceder a formación, asesoría jurídica, "
-                      "atención psicosocial, actividades culturales y tiempo para sí "
-                      "mismas, mientras servicios complementarios atienden a las "
-                      "personas a su cargo.",
+            "intro":  "Las Manzanas del Cuidado ofrecen a las personas cuidadoras "
+                      "formación, asesoría jurídica, atención psicosocial, actividades "
+                      "culturales y tiempo para sí mismas.",
             "intro_facil": "Apoyo para las personas que cuidan.",
             "alt": "Mapa de Bogotá con los servicios de las Manzanas del Cuidado "
                    "dirigidos a personas cuidadoras, sus familias y la comunidad, y "

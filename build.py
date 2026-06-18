@@ -45,7 +45,13 @@ def mail_link(v):
     s = nd(v)
     return f'<a href="mailto:{s}">{s}</a>' if s != "No disponible" else s
 
-def popup(titulo, subtitulo, filas):
+def comollegar(lat, lng):
+    """Enlace a la ruta en Google Maps hasta el servicio (abre la app de mapas)."""
+    return (f'<a class="popup-ir" target="_blank" rel="noopener" '
+            f'href="https://www.google.com/maps/dir/?api=1&destination={lat},{lng}">'
+            f'Cómo llegar →</a>')
+
+def popup(titulo, subtitulo, filas, latlng=None):
     """Construye HTML de popup uniforme entre los cuatro mapas."""
     out = [f'<div style="max-width:280px"><b style="font-size:14px">{html.escape(titulo)}</b>']
     if subtitulo:
@@ -53,6 +59,8 @@ def popup(titulo, subtitulo, filas):
     out.append('<br><br>')
     for etq, val in filas:
         out.append(f'<b>{etq}:</b> {val}<br>')
+    if latlng:
+        out.append(comollegar(latlng[0], latlng[1]))
     out.append('</div>')
     return ''.join(out)
 
@@ -175,7 +183,7 @@ def build_mapa1():
             ("Teléfono",             tel_link(r.get("telefono"))),
             ("Correo",               mail_link(r.get("correo"))),
             ("Horario",              nd(r.get("horario"))),
-        ])
+        ], latlng=(r.geometry.y, r.geometry.x))
         feats.append({"lat": r.geometry.y, "lng": r.geometry.x, "props": {
             "id": i, "cat": cat, "tooltip": nombre, "popup": p,
             "localidad": loc or "No disponible", "tipo": cat,
@@ -214,7 +222,7 @@ def build_mapa2():
             ("Correo",     mail_link(r.get("EMAIL"))),
             ("Sitio web",  nd(r.get("WEB"))),
             ("Discapacidades atendidas", disc_texto(r)),
-        ])
+        ], latlng=(r.geometry.y, r.geometry.x))
         d = discs_de(r)
         feats.append({"lat": r.geometry.y, "lng": r.geometry.x, "props": {
             "id": i, "cat": cat, "tooltip": nombre, "popup": p,
@@ -255,7 +263,7 @@ def build_mapa3():
             ("Teléfono",     tel_link(r.get("telefono"))),
             ("Correo",       mail_link(r.get("correo"))),
             ("Horario",      nd(r.get("horario"))),
-        ])
+        ], latlng=(r.geometry.y, r.geometry.x))
         d = discs_de(r)
         feats.append({"lat": r.geometry.y, "lng": r.geometry.x, "props": {
             "id": i, "cat": cat, "tooltip": nombre, "popup": p,
@@ -298,7 +306,7 @@ def build_mapa4():
             ("Dirección",        nd(r.get("direccion"))),
             ("Teléfono",         tel_link(r.get("telefono"))),
             ("Horario",          nd(r.get("horario"))),
-        ])
+        ], latlng=(r.geometry.y, r.geometry.x))
         feats.append({"lat": r.geometry.y, "lng": r.geometry.x, "props": {
             "id": idx, "cat": cat, "tooltip": nombre, "popup": p,
             "localidad": loc or "No disponible", "tipo": cat,
@@ -314,7 +322,7 @@ def build_mapa4():
         p = popup(nombre, "Equipamiento ancla de la Manzana del Cuidado", [
             ("Localidad", loc or "No disponible"),
             ("Dirección", nd(r.get("Direccion"))),
-        ])
+        ], latlng=(r.geometry.y, r.geometry.x))
         feats.append({"lat": r.geometry.y, "lng": r.geometry.x, "props": {
             "id": idx, "cat": "Equipamiento ancla", "tooltip": nombre, "popup": p,
             "localidad": loc or "No disponible", "tipo": "Equipamiento ancla",

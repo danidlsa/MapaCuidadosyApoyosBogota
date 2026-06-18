@@ -415,6 +415,13 @@ a { color: var(--morado); }
   box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 1rem; width: 240px;
   display: flex; flex-direction: column; gap: .6rem;
 }
+.a11y-head { display: flex; align-items: center; justify-content: space-between; }
+.a11y-head strong { color: var(--morado); font-size: 1rem; }
+#a11y-cerrar {
+  cursor: pointer; background: none; border: none; color: var(--morado);
+  font-size: 1.3rem; line-height: 1; width: 40px; height: 40px; border-radius: 8px;
+}
+#a11y-cerrar:hover, #a11y-cerrar:focus-visible { background: #efe7f5; }
 #a11y-panel fieldset { border: none; padding: 0; margin: 0; }
 #a11y-panel legend { font-size: .85rem; font-weight: 700; color: var(--texto); margin-bottom: .4rem; padding: 0; }
 .a11y-tamanos { display: flex; gap: .4rem; }
@@ -536,3 +543,7 @@ html.lectura-facil .cifra-card,
 html.lectura-facil .aporte-card { padding: 1.8rem 1.6rem; }
 html.lectura-facil p { margin-bottom: 1.2rem; }
 html.lectura-facil .seccion-mapa .intro-mapa { padding: 1.8rem; }
+
+/* Modo oscuro: header del panel de accesibilidad */
+html.oscuro .a11y-head strong, html.oscuro #a11y-cerrar { color: #c9a9e6; }
+html.oscuro #a11y-cerrar:hover, html.oscuro #a11y-cerrar:focus-visible { background: #2c2240; }
