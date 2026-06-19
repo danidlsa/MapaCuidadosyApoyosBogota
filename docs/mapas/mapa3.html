@@ -110,9 +110,9 @@
 
     /* ── Responsive: panel arriba y filtros colapsables en móvil ── */
     @media (max-width:680px){
-      #app{flex-direction:column;height:auto;}
-      #panel{width:100%;border-right:none;border-bottom:2px solid var(--borde);max-height:none;}
-      #mapa{height:60vh;min-height:340px;}
+      #app{flex-direction:column;height:100%;}
+      #panel{width:100%;border-right:none;border-bottom:2px solid var(--borde);max-height:none;flex:0 0 auto;}
+      #mapa{flex:1 1 auto;height:auto;min-height:320px;}
       #toggle-filtros{display:inline-flex;align-items:center;gap:.3rem;}
       #panel-colapsable{display:none;}
       #panel-colapsable.abierto{display:block;}

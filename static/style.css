@@ -266,7 +266,15 @@ p { margin-bottom: 1rem; }
   color: color-mix(in srgb, var(--c, #5B2B82) 72%, #241a2c);
 }
 @media (max-width: 900px) { .menu-mapas { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 540px) { .menu-mapas { grid-template-columns: 1fr; } }
+/* Celular: cuatro cuadraditos 2×2 visibles a la vez (compactos) */
+@media (max-width: 540px) {
+  .menu-mapas { grid-template-columns: repeat(2, 1fr); gap: .75rem; }
+  .tarjeta-mapa { padding: 1rem .7rem; align-items: center; text-align: center; }
+  .tarjeta-cab { flex-direction: column; gap: .35rem; margin-bottom: .5rem; }
+  .tarjeta-mapa .numero { font-size: .65rem; }
+  .tarjeta-mapa h3 { font-size: .95rem; line-height: 1.2; }
+  .tarjeta-decision, .tarjeta-ir { display: none; }
+}
 
 /* ── Secciones de mapa ────────────────────────────────────────────────────── */
 /* Cada mapa es su propia "zona": fondo con un tinte de su color + franja superior */
@@ -392,17 +400,32 @@ a { color: var(--morado); }
       rgba(247,244,250,0.96) 0%, rgba(247,244,250,0.88) 55%, rgba(247,244,250,0.72) 100%);
   }
   .hero-texto { max-width: 100%; }
+  /* Hero compacto: ocultar chips para llegar antes a la acción */
+  .hero-chips { display: none; }
+
+  /* Reordenar en móvil: hero → menú de mapas → mapas → cómo usar → contexto → créditos */
+  #contenido { display: flex; flex-direction: column; }
+  #portada    { order: 0; }
+  #menu-mapas { order: 1; }
+  .seccion-mapa { order: 2; }
+  #como-usar  { order: 3; }
+  #contexto   { order: 4; }
+  #creditos   { order: 5; }
 }
 @media (max-width: 700px) {
   section { padding: 2.5rem 1.25rem; }
   #nav-top { flex-wrap: wrap; gap: .5rem; }
   #nav-top nav a { padding: .4rem .6rem; font-size: .85rem; }
   .seccion-mapa .intro-mapa { margin: 0 1rem 1.25rem; padding: 1rem 1.1rem; }
+  .seccion-mapa .intro-mapa h2 { font-size: 1.2rem; }
+  .seccion-mapa .intro-mapa p { font-size: .92rem; }
+  .mapa-eyebrow { font-size: .72rem; }
   .tabla-alternativa { padding: 0 1.25rem; }
   .sec-head { gap: .6rem; }
   .sec-head .pin { width: 34px !important; height: 34px !important; }
   .btn-volver { margin: 1.5rem 1.25rem; }
-  .mapa-iframe-wrapper { height: 520px; }
+  /* Mapa casi a pantalla completa al llegar */
+  .mapa-iframe-wrapper { height: 85vh; height: 85dvh; min-height: 420px; }
 }
 
 /* ── Barra de accesibilidad ───────────────────────────────────────────────── */
