@@ -16,7 +16,8 @@
   --sombra:      0 2px 10px rgba(91,43,130,0.10);
 }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+@media (max-width: 700px) { html { scroll-padding-top: 120px; } }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   * { animation: none !important; transition: none !important; }
@@ -191,6 +192,21 @@ p { margin-bottom: 1rem; }
   }
   .paso-badge { margin-bottom: 0; }
   .paso-flecha { padding-top: 0; transform: rotate(90deg); }
+}
+/* Celular: "Cómo usar" como 4 cuadrados 2×2 (igual que el menú) */
+@media (max-width: 540px) {
+  .infografia {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: .7rem; padding: 1rem;
+  }
+  .infografia .paso {
+    flex-direction: column; align-items: center; text-align: center; gap: .35rem;
+    background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 1rem .6rem;
+  }
+  .paso-badge { margin-bottom: .2rem; }
+  .infografia .pin-ring { width: 56px !important; height: 56px !important; }
+  .paso-titulo { font-size: .92rem; }
+  .paso-desc { display: none; }
+  .paso-flecha { display: none; }
 }
 
 /* ── Slot para imagen de Canva ────────────────────────────────────────────── */

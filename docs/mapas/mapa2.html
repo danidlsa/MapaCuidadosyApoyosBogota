@@ -327,6 +327,16 @@ const tiles = L.tileLayer(TILES_LIGHT, {
   attribution:'© OpenStreetMap, © CARTO', maxZoom:19
 }).addTo(map);
 
+// Al desplazar el contenido del popup, que no se dispare el aviso de "dos dedos" del mapa
+map.on('popupopen', function(e){
+  const el = e.popup.getElement && e.popup.getElement();
+  if (!el) return;
+  L.DomEvent.disableScrollPropagation(el);
+  const stop = function(ev){ ev.stopPropagation(); };
+  el.addEventListener('touchstart', stop, { passive: true });
+  el.addEventListener('touchmove',  stop, { passive: true });
+});
+
 // Mensajes desde la página contenedora (modo oscuro y "abrir" desde la lista)
 window.addEventListener('message', function(e){
   if (!e.data) return;
