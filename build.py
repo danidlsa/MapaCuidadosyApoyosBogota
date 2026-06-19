@@ -6,7 +6,7 @@ Salida: carpeta site/ lista para subir a Netlify o abrir localmente.
 Cada mapa se genera con un template Leaflet propio (templates/mapa.html.j2) que
 incluye filtros accesibles, iconografía por forma+color y clustering.
 """
-import shutil, json, html, ast, re
+import shutil, json, html, ast, re, time
 from pathlib import Path
 
 import geopandas as gpd
@@ -411,7 +411,8 @@ def main():
     print("Generando index.html…")
     tmpl_idx = env.get_template("index.html.j2")
     html_idx = tmpl_idx.render(textos=config.TEXTOS, cifras=cifras,
-                               colors=config.COLORS, repo=config.REPO_URL)
+                               colors=config.COLORS, repo=config.REPO_URL,
+                               version=str(int(time.time())))
     (SITE / "index.html").write_text(html_idx, encoding="utf-8")
 
     print(f"\n✓ Sitio en: {SITE}")
