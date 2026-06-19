@@ -86,49 +86,6 @@
     </div>
   </section>
 
-  <!-- Momento 3: Cómo usar -->
-  <section id="como-usar" aria-labelledby="como-usar-titulo">
-    <div class="sec-head">{{ picto("signpost-2-fill", "#4F7A12", 42) | safe }}<h2 id="como-usar-titulo">{{ textos.como_usar.titulo }}</h2></div>
-
-    <!-- Infografía de pasos. El texto (título + descripción) es HTML real que leen
-         los lectores de pantalla; los pictogramas y flechas son decorativos. -->
-    <ol class="infografia" aria-label="Cuatro pasos para usar el sitio">
-      {% for icon, color, titulo, desc in textos.como_usar.pasos %}
-      <li class="paso" style="--c: {{ color }}">
-        <div class="paso-badge">
-          {{ picto_ring(icon, color, 78) | safe }}
-          <span class="paso-num" aria-hidden="true">{{ loop.index }}</span>
-        </div>
-        <h3 class="paso-titulo">{{ titulo }}</h3>
-        <p class="paso-desc">{{ desc }}</p>
-      </li>
-      {% if not loop.last %}
-      <li class="paso-flecha" aria-hidden="true">
-        <svg viewBox="0 0 16 16" width="24" height="24" fill="#B59AD0"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg>
-      </li>
-      {% endif %}
-      {% endfor %}
-    </ol>
-
-    <!-- Tarjeta: video en LSC (espacio reservado) -->
-    <div class="tarjeta-video" role="region" aria-label="Video en Lengua de Señas Colombiana">
-      <div class="tv-texto">
-        {{ picto("hand-index", "#5B2B82", 40) | safe }}
-        <div>
-          <h3>{{ textos.como_usar.video_titulo }}</h3>
-          <p>{{ textos.como_usar.video_desc }}</p>
-          <span class="tv-link" aria-hidden="true">Ver video →</span>
-          <p class="tv-nota">{{ textos.como_usar.video_nota }}</p>
-        </div>
-      </div>
-      <div class="tv-thumb" aria-hidden="true">
-        {{ picto("play-circle-fill", "#5B2B82", 56) | safe }}
-      </div>
-    </div>
-
-    <a class="btn-volver" href="#menu-mapas">Ver los mapas <span aria-hidden="true">→</span></a>
-  </section>
-
   <!-- Momento 4: Menú -->
   <section id="menu-mapas" aria-labelledby="menu-titulo">
     <div class="sec-head">{{ picto("signpost-split-fill", "#E8705B", 42) | safe }}<h2 id="menu-titulo">{{ textos.menu.titulo }}</h2></div>
@@ -185,6 +142,49 @@
     <a class="btn-volver" href="#menu-mapas">↑ Volver al menú de mapas</a>
   </section>
   {% endfor %}
+
+  <!-- Cómo usar (después de los mapas, igual en escritorio y móvil) -->
+  <section id="como-usar" aria-labelledby="como-usar-titulo">
+    <div class="sec-head">{{ picto("signpost-2-fill", "#4F7A12", 42) | safe }}<h2 id="como-usar-titulo">{{ textos.como_usar.titulo }}</h2></div>
+
+    <!-- Infografía de pasos. El texto (título + descripción) es HTML real que leen
+         los lectores de pantalla; los pictogramas y flechas son decorativos. -->
+    <ol class="infografia" aria-label="Cuatro pasos para usar el sitio">
+      {% for icon, color, titulo, desc in textos.como_usar.pasos %}
+      <li class="paso" style="--c: {{ color }}">
+        <div class="paso-badge">
+          {{ picto_ring(icon, color, 78) | safe }}
+          <span class="paso-num" aria-hidden="true">{{ loop.index }}</span>
+        </div>
+        <h3 class="paso-titulo">{{ titulo }}</h3>
+        <p class="paso-desc">{{ desc }}</p>
+      </li>
+      {% if not loop.last %}
+      <li class="paso-flecha" aria-hidden="true">
+        <svg viewBox="0 0 16 16" width="24" height="24" fill="#B59AD0"><path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg>
+      </li>
+      {% endif %}
+      {% endfor %}
+    </ol>
+
+    <!-- Tarjeta: video en LSC (espacio reservado) -->
+    <div class="tarjeta-video" role="region" aria-label="Video en Lengua de Señas Colombiana">
+      <div class="tv-texto">
+        {{ picto("hand-index", "#5B2B82", 40) | safe }}
+        <div>
+          <h3>{{ textos.como_usar.video_titulo }}</h3>
+          <p>{{ textos.como_usar.video_desc }}</p>
+          <span class="tv-link" aria-hidden="true">Ver video →</span>
+          <p class="tv-nota">{{ textos.como_usar.video_nota }}</p>
+        </div>
+      </div>
+      <div class="tv-thumb" aria-hidden="true">
+        {{ picto("play-circle-fill", "#5B2B82", 56) | safe }}
+      </div>
+    </div>
+
+    <a class="btn-volver" href="#menu-mapas">Ver los mapas <span aria-hidden="true">→</span></a>
+  </section>
 
   <!-- Momento 6: Contexto -->
   <section id="contexto" aria-labelledby="contexto-titulo">

@@ -334,7 +334,7 @@ body.mapa-fs-activo { overflow: hidden; }
 .tabla-alternativa { max-width: 880px; margin: 1.5rem auto; padding: 0 3rem; }
 .tabla-alternativa summary {
   cursor: pointer; color: var(--morado); font-size: .95rem; font-weight: 700;
-  display: inline-flex; align-items: center; gap: .55rem;
+  display: flex; width: fit-content; margin: 0 auto; align-items: center; gap: .55rem;
   background: #fff; border: 2px solid var(--morado); border-radius: 999px;
   padding: .55rem 1.1rem; min-height: 44px; list-style: none;
 }
@@ -359,7 +359,7 @@ body.mapa-fs-activo { overflow: hidden; }
 
 /* ── Botón volver ─────────────────────────────────────────────────────────── */
 .btn-volver {
-  display: inline-block; margin: 1.5rem 3rem; padding: .7rem 1.5rem;
+  display: block; width: fit-content; margin: 1.5rem auto; padding: .7rem 1.5rem;
   background: var(--morado); color: var(--blanco); text-decoration: none;
   border-radius: var(--radio); font-size: .92rem; font-weight: 600;
   min-height: 44px;
@@ -425,15 +425,6 @@ a { color: var(--morado); }
   .hero-texto { max-width: 100%; }
   /* Hero compacto: ocultar chips para llegar antes a la acción */
   .hero-chips { display: none; }
-
-  /* Reordenar en móvil: hero → menú de mapas → mapas → cómo usar → contexto → créditos */
-  #contenido { display: flex; flex-direction: column; }
-  #portada    { order: 0; }
-  #menu-mapas { order: 1; }
-  .seccion-mapa { order: 2; }
-  #como-usar  { order: 3; }
-  #contexto   { order: 4; }
-  #creditos   { order: 5; }
 }
 @media (max-width: 700px) {
   section { padding: 2.5rem 1.25rem; }
@@ -456,7 +447,7 @@ a { color: var(--morado); }
   .tabla-alternativa { padding: 0 1.25rem; }
   .sec-head { gap: .6rem; }
   .sec-head .pin { width: 34px !important; height: 34px !important; }
-  .btn-volver { margin: 1.5rem 1.25rem; }
+  .btn-volver { margin: 1.5rem auto; }
   /* Mapa casi a pantalla completa al llegar */
   .mapa-iframe-wrapper { height: 85vh; height: 85dvh; min-height: 420px; }
 }
