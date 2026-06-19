@@ -16,6 +16,10 @@
     {{ picto("heart-fill", "#5B2B82", 38) | safe }}
     <span class="marca-txt"><strong>Mapa de cuidados y apoyos</strong><span>a personas con discapacidad · Bogotá</span></span>
   </a>
+  <button id="menu-toggle" aria-expanded="false" aria-controls="nav-zona" aria-label="Abrir menú">
+    <span aria-hidden="true">☰</span> Menú
+  </button>
+  <div id="nav-zona">
   <nav aria-label="Secciones de la página">
     <a href="#como-usar">Cómo usar</a>
     <a href="#menu-mapas">Mapas</a>
@@ -54,6 +58,7 @@
       </button>
     </div>
   </div>
+  </div><!-- /nav-zona -->
 </header>
 
 <main id="contenido">
@@ -289,6 +294,19 @@
       cont.scrollTop += (rr.top - cr.top) - cont.clientHeight / 2 + rr.height / 2;
     }
   });
+
+  // ── Menú hamburguesa (móvil) ────────────────────────────────────────────
+  const menuToggle = document.getElementById('menu-toggle');
+  const navZona = document.getElementById('nav-zona');
+  menuToggle.addEventListener('click', () => {
+    const abierto = navZona.classList.toggle('abierto');
+    menuToggle.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+  });
+  navZona.querySelectorAll('nav a').forEach(a =>
+    a.addEventListener('click', () => {
+      navZona.classList.remove('abierto');
+      menuToggle.setAttribute('aria-expanded', 'false');
+    }));
 
   // ── Barra de accesibilidad ──────────────────────────────────────────────
   const root = document.documentElement;
