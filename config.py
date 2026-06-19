@@ -219,7 +219,7 @@ TEXTOS = {
     ],
 
     "contexto": {
-        "titulo": "Lo que hay detrás de este mapa",
+        "titulo": "Lo que hay detrás",
         "parrafos": [
             ("La población",
              "En Bogotá viven alrededor de 458.000 personas con alguna dificultad "
@@ -248,7 +248,7 @@ TEXTOS = {
     },
 
     "creditos": {
-        "titulo": "Este mapa también lo construye usted",
+        "titulo": "Estos mapas también los construye usted",
         "invitacion": "Si encontró un error, si conoce un servicio que no aparece, "
                       "si quiere sumar algo desde su experiencia o desde su "
                       "organización, escríbanos.",
